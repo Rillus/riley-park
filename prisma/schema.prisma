@@ -10,13 +10,43 @@ datasource db {
 }
 
 model Project {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   name          String
-  repositoryUrl String   @unique @map("repository_url")
-  defaultBranch String   @default("main") @map("default_branch")
+  repositoryUrl String    @unique @map("repository_url")
+  defaultBranch String    @default("main") @map("default_branch")
   description   String?
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  features      Feature[]
 
   @@map("projects")
+}
+
+model Feature {
+  id          String         @id @default(cuid())
+  projectId   String         @map("project_id")
+  title       String
+  description String
+  priority    String         @default("medium") // high, medium, low
+  status      String         @default("planned") // planned, in_progress, completed, blocked
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+  project     Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  workflowSteps WorkflowStep[]
+
+  @@map("features")
+}
+
+model WorkflowStep {
+  id        String   @id @default(cuid())
+  featureId String   @map("feature_id")
+  stepType  String   @map("step_type") // spec, design, implement, review, test, submit
+  status    String   @default("pending") // pending, in_progress, completed, blocked
+  agentId   String?  @map("agent_id")
+  output    String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  feature   Feature  @relation(fields: [featureId], references: [id], onDelete: Cascade)
+
+  @@map("workflow_steps")
 }

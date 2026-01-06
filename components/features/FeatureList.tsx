@@ -1,143 +1,214 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { FeatureMetadata } from '@/lib/features/parser';
+import { useState, useEffect, useCallback } from 'react';
+import { FeatureWithWorkflow } from '@/lib/features/types';
+import { fetchFeatures, FetchFeaturesOptions } from '@/lib/features';
+import FeatureCard from './FeatureCard';
 
 interface FeatureListProps {
-  onFeatureSelect?: (feature: FeatureMetadata) => void;
+  projectId: string;
+  onViewFeature: (feature: FeatureWithWorkflow) => void;
+  onEditFeature?: (feature: FeatureWithWorkflow) => void;
+  onDeleteFeature?: (feature: FeatureWithWorkflow) => void;
+  onCreateFeature?: () => void;
 }
 
-export default function FeatureList({ onFeatureSelect }: FeatureListProps) {
-  const [features, setFeatures] = useState<FeatureMetadata[]>([]);
+export default function FeatureList({
+  projectId,
+  onViewFeature,
+  onEditFeature,
+  onDeleteFeature,
+  onCreateFeature,
+}: FeatureListProps) {
+  const [features, setFeatures] = useState<FeatureWithWorkflow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<string>('all');
 
-  useEffect(() => {
-    fetchFeatures();
-  }, []);
+  // Filters and sorting
+  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [priorityFilter, setPriorityFilter] = useState<string>('');
+  const [sortBy, setSortBy] = useState<string>('createdAt');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
-  const fetchFeatures = async () => {
+  const loadFeatures = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
     try {
-      setLoading(true);
-      const response = await fetch('/api/features');
-      if (!response.ok) {
-        throw new Error('Failed to fetch features');
+      const options: FetchFeaturesOptions = {
+        sortBy: sortBy as FetchFeaturesOptions['sortBy'],
+        sortOrder,
+      };
+
+      if (statusFilter) {
+        options.status = statusFilter;
       }
-      const data = await response.json();
-      setFeatures(data.features);
+      if (priorityFilter) {
+        options.priority = priorityFilter;
+      }
+
+      const response = await fetchFeatures(projectId, options);
+      setFeatures(response.features);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load features');
+      setError(err instanceof Error ? err.message : 'Failed to fetch features');
     } finally {
       setLoading(false);
     }
-  };
+  }, [projectId, statusFilter, priorityFilter, sortBy, sortOrder]);
 
-  const filteredFeatures = features.filter((feature) => {
-    if (statusFilter === 'all') return true;
-    const status = feature.status?.toLowerCase() || '';
-    if (statusFilter === 'not-started') {
-      return status.includes('not started') || status === 'not started';
-    }
-    if (statusFilter === 'in-progress') {
-      return status.includes('in progress') || status.includes('in_progress');
-    }
-    if (statusFilter === 'completed') {
-      return status.includes('completed') || status.includes('✅');
-    }
-    return true;
-  });
-
-  const getStatusColor = (status?: string) => {
-    if (!status) return 'bg-gray-100 text-gray-800';
-    const s = status.toLowerCase();
-    if (s.includes('completed') || s.includes('✅')) {
-      return 'bg-green-100 text-green-800';
-    }
-    if (s.includes('in progress') || s.includes('in_progress')) {
-      return 'bg-blue-100 text-blue-800';
-    }
-    return 'bg-gray-100 text-gray-800';
-  };
+  useEffect(() => {
+    loadFeatures();
+  }, [loadFeatures]);
 
   if (loading) {
     return (
-      <div className="p-4 text-center text-gray-600">
-        Loading features...
+      <div className="flex items-center justify-center py-12">
+        <div className="text-gray-500 dark:text-gray-400">Loading features...</div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="p-4 bg-red-50 border border-red-200 rounded-md text-red-700">
-        Error: {error}
+      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+        <p className="text-red-700 dark:text-red-400">{error}</p>
+        <button
+          onClick={loadFeatures}
+          className="mt-2 text-sm text-red-600 dark:text-red-400 hover:underline"
+        >
+          Try again
+        </button>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-          Features ({filteredFeatures.length})
-        </h2>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="all">All Status</option>
-          <option value="not-started">Not Started</option>
-          <option value="in-progress">In Progress</option>
-          <option value="completed">Completed</option>
-        </select>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredFeatures.map((feature) => (
-          <div
-            key={feature.id}
-            onClick={() => onFeatureSelect?.(feature)}
-            className="p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:shadow-md cursor-pointer transition-all bg-white dark:bg-gray-800"
-          >
-            <div className="flex items-start justify-between mb-2">
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-                {feature.title}
-              </h3>
-              {feature.status && (
-                <span
-                  className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(
-                    feature.status
-                  )}`}
-                >
-                  {feature.status.replace('✅', '').trim() || 'Not Started'}
-                </span>
-              )}
-            </div>
-
-            <div className="space-y-1 text-sm text-gray-600 dark:text-gray-400">
-              {feature.priority && (
-                <div>
-                  <span className="font-medium">Priority:</span> {feature.priority}
-                </div>
-              )}
-              {feature.estimatedTime && (
-                <div>
-                  <span className="font-medium">Time:</span> {feature.estimatedTime}
-                </div>
-              )}
-            </div>
-
-            <div className="mt-3 pt-3 border-t border-gray-200">
-              <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">
-                View Spec →
-              </button>
-            </div>
+    <div className="space-y-6">
+      {/* Controls */}
+      <div className="flex flex-wrap gap-4 items-center justify-between">
+        <div className="flex flex-wrap gap-4">
+          {/* Status Filter */}
+          <div>
+            <label
+              htmlFor="statusFilter"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
+              Filter by Status
+            </label>
+            <select
+              id="statusFilter"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">All Statuses</option>
+              <option value="planned">Planned</option>
+              <option value="in_progress">In Progress</option>
+              <option value="completed">Completed</option>
+              <option value="blocked">Blocked</option>
+            </select>
           </div>
-        ))}
+
+          {/* Priority Filter */}
+          <div>
+            <label
+              htmlFor="priorityFilter"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
+              Filter by Priority
+            </label>
+            <select
+              id="priorityFilter"
+              value={priorityFilter}
+              onChange={(e) => setPriorityFilter(e.target.value)}
+              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">All Priorities</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
+
+          {/* Sort */}
+          <div>
+            <label
+              htmlFor="sortBy"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
+              Sort By
+            </label>
+            <select
+              id="sortBy"
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="createdAt">Created Date</option>
+              <option value="updatedAt">Updated Date</option>
+              <option value="priority">Priority</option>
+              <option value="status">Status</option>
+              <option value="title">Title</option>
+            </select>
+          </div>
+
+          {/* Sort Order */}
+          <div>
+            <label
+              htmlFor="sortOrder"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
+              Order
+            </label>
+            <select
+              id="sortOrder"
+              value={sortOrder}
+              onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
+              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="desc">Descending</option>
+              <option value="asc">Ascending</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Create Button */}
+        {onCreateFeature && (
+          <button
+            onClick={onCreateFeature}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm font-medium"
+          >
+            Create Feature
+          </button>
+        )}
       </div>
+
+      {/* Features Grid */}
+      {features.length === 0 ? (
+        <div className="text-center py-12 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+          <p className="text-gray-500 dark:text-gray-400">No features found</p>
+          {onCreateFeature && (
+            <button
+              onClick={onCreateFeature}
+              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm font-medium"
+            >
+              Create your first feature
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {features.map((feature) => (
+            <FeatureCard
+              key={feature.id}
+              feature={feature}
+              onView={onViewFeature}
+              onEdit={onEditFeature}
+              onDelete={onDeleteFeature}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
-
