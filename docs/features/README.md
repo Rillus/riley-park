@@ -57,6 +57,29 @@ Each subtask includes:
 4. Integrate features as you go
 5. Polish and refine after core functionality works
 
+## Feature Status Management
+
+Features can have the following statuses:
+- **Not Started** - Feature hasn't been worked on yet
+- **In Progress** - Feature is currently being developed
+- **✅ Completed** - Feature has been completed and merged
+
+### Updating Feature Status
+
+When a feature is completed via Cloud Agents:
+
+1. **Manual Update (Recommended)**: After merging the PR, update the `**Status:**` field in the feature's markdown file:
+   ```
+   **Status:** ✅ Completed
+   ```
+
+2. **Include in Agent Prompt**: When launching an agent to work on a feature, add this instruction to the prompt:
+   > "When you complete this feature and create the PR, update the Status field in the feature spec markdown file (docs/features/XXX-feature-name.md) to '✅ Completed' before submitting the PR."
+
+3. **Automatic Detection (Future)**: We could add automation to detect when a feature branch is merged and automatically update the status, but for now manual updates are the most reliable.
+
+The feature list will automatically reflect the updated status on the next page refresh.
+
 ## Notes
 
 - Features can be developed in parallel if dependencies allow

@@ -13,12 +13,14 @@ export default function FeaturesPage() {
     setSelectedFeature(feature);
   };
 
-  const handleLoadIntoChat = (spec: string) => {
+  const handleLoadIntoChat = (spec: string, feature?: FeatureMetadata) => {
     setSpecToLoad(spec);
-    setSelectedFeature(null);
     // Navigate to home page with spec loaded (encode the full spec)
+    // Also pass the feature ID so we can generate the branch name
     const encodedSpec = encodeURIComponent(spec);
-    window.location.href = `/?spec=${encodedSpec}`;
+    const featureId = feature?.id || selectedFeature?.id || '';
+    setSelectedFeature(null);
+    window.location.href = `/?spec=${encodedSpec}&featureId=${encodeURIComponent(featureId)}`;
   };
 
   return (

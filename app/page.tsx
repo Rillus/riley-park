@@ -23,6 +23,8 @@ function HomeContent() {
   useEffect(() => {
     // Check for spec in URL params (from feature loader)
     const specParam = searchParams?.get('spec');
+    const featureIdParam = searchParams?.get('featureId');
+    
     if (specParam) {
       // Decode and format the spec for the agent prompt
       const decodedSpec = decodeURIComponent(specParam);
@@ -32,9 +34,27 @@ ${decodedSpec}
 
 Please follow the requirements, acceptance criteria, and technical requirements outlined in the specification.`;
       setInitialPrompt(formattedPrompt);
-      // Default to current repo if available
-      setInitialRepository('https://github.com/riley/riley-park');
-      setInitialBranch('main');
+      // Default to current repo
+      setInitialRepository('https://github.com/rillus/riley-park');
+      // Generate branch name from feature ID: riley-park/feature/{feature-id}
+      if (featureIdParam) {
+        const featureId = decodeURIComponent(featureIdParam);
+        setInitialBranch(`riley-park/feature/${featureId}`);
+      } else {
+        // Try to extract feature number from spec title
+        const featureMatch = decodedSpec.match(/^#\s+Feature\s+(\d+[a-z]?)[:\-]/im);
+        if (featureMatch) {
+          const featureNum = featureMatch[1];
+          // Extract feature name from title
+          const nameMatch = decodedSpec.match(/^#\s+Feature\s+\d+[a-z]?[:\-]\s*(.+)$/im);
+          const featureName = nameMatch 
+            ? nameMatch[1].toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+            : 'feature';
+          setInitialBranch(`riley-park/feature/${featureNum}-${featureName}`);
+        } else {
+          setInitialBranch('riley-park/feature/task');
+        }
+      }
     }
   }, [searchParams]);
 
