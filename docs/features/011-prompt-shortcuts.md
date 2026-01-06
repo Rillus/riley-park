@@ -1,0 +1,157 @@
+# Feature 011: Prompt Shortcuts
+
+**Priority:** P0 (Must Have)  
+**Status:** Not Started  
+**Estimated Time:** 1.5 days
+
+## Overview
+
+Library of pre-defined and user-defined prompt shortcuts for common tasks. Quick access to frequently used prompts.
+
+## Requirements
+
+### 1. Pre-defined Shortcuts
+- **Create Spec:** "Create a detailed specification for [feature]. Include: requirements, acceptance criteria, technical constraints, user stories"
+- **Review PR:** "Review this PR thoroughly. Check: code quality, adherence to requirements, test coverage, edge cases, performance, security"
+- **Add Tests:** "Add comprehensive tests for [feature]. Include: unit tests, integration tests, edge cases, error handling"
+- **Refactor:** "Refactor this code to improve: readability, maintainability, performance, following best practices"
+- **Documentation:** "Add/update documentation for [feature]. Include: README updates, code comments, API documentation"
+
+### 2. User-defined Shortcuts
+- User can create custom prompt templates
+- Use variables: `{feature}`, `{project}`, `{step}`, `{description}`
+- Save to library
+- Edit existing shortcuts
+- Delete shortcuts
+
+### 3. Shortcut Library View
+- Display all shortcuts (pre-defined and user-defined)
+- Group by category (optional)
+- Search shortcuts
+- Quick actions: Use, Edit, Delete
+
+### 4. Using Shortcuts
+- Access shortcuts from:
+  - Agent conversation view (quick action buttons)
+  - Agent launch form (shortcut selector)
+  - Feature workflow step (context-aware shortcuts)
+- Fill in variables automatically
+- Insert shortcut text into prompt input
+- User can edit before sending
+
+### 5. Context-aware Shortcuts
+- Show relevant shortcuts based on context:
+  - In Specification step: Show "Create Spec" shortcut
+  - In Review step: Show "Review PR" shortcut
+  - In Testing step: Show "Add Tests" shortcut
+- Hide irrelevant shortcuts
+
+## Acceptance Criteria
+
+- [ ] User can access pre-defined shortcuts
+- [ ] User can create custom shortcuts
+- [ ] User can use shortcuts in agent conversations
+- [ ] Shortcuts fill in variables automatically
+- [ ] User can edit shortcut text before sending
+- [ ] Context-aware shortcuts are shown appropriately
+
+## Technical Requirements
+
+### Data Storage
+- Database table: `shortcuts`
+  - id (primary key)
+  - name (string, required)
+  - prompt_template (text, required)
+  - category (string, nullable - for grouping)
+  - is_predefined (boolean, default: false)
+  - user_id (foreign key, nullable for MVP - single user)
+  - variables (json, nullable - list of variables used)
+  - created_at (timestamp)
+  - updated_at (timestamp)
+- Database migrations
+- ORM models
+
+### API Endpoints
+- `GET /api/shortcuts` - List all shortcuts
+- `GET /api/shortcuts/:id` - Get shortcut details
+- `POST /api/shortcuts` - Create shortcut
+- `PUT /api/shortcuts/:id` - Update shortcut
+- `DELETE /api/shortcuts/:id` - Delete shortcut
+- `POST /api/shortcuts/:id/expand` - Expand shortcut with variables
+
+### Variable Expansion
+- Function to expand shortcut variables
+- Replace `{feature}` with feature name
+- Replace `{project}` with project name
+- Replace `{step}` with workflow step name
+- Replace `{description}` with feature description
+
+## Subtasks
+
+### Subtask 11.1: Database Schema & Models (2 hours)
+- [ ] Create shortcuts table migration
+- [ ] Create Shortcut model
+- [ ] Seed pre-defined shortcuts
+- [ ] Write tests for model
+
+### Subtask 11.2: Shortcut API Endpoints (3 hours)
+- [ ] Create GET /api/shortcuts endpoint
+- [ ] Create GET /api/shortcuts/:id endpoint
+- [ ] Create POST /api/shortcuts endpoint
+- [ ] Create PUT /api/shortcuts/:id endpoint
+- [ ] Create DELETE /api/shortcuts/:id endpoint
+- [ ] Create POST /api/shortcuts/:id/expand endpoint
+- [ ] Add input validation
+- [ ] Write tests for all endpoints
+
+### Subtask 11.3: Variable Expansion Service (2 hours)
+- [ ] Create variable expansion function
+- [ ] Parse shortcut template for variables
+- [ ] Replace variables with actual values
+- [ ] Handle missing variables gracefully
+- [ ] Write tests for expansion
+
+### Subtask 11.4: Shortcut Library UI (3 hours)
+- [ ] Create shortcut library view
+- [ ] Display shortcuts list
+- [ ] Add search functionality
+- [ ] Add category grouping (optional)
+- [ ] Add "Use", "Edit", "Delete" actions
+- [ ] Write tests for components
+
+### Subtask 11.5: Create/Edit Shortcut UI (2 hours)
+- [ ] Create shortcut form component
+- [ ] Add name, template, category fields
+- [ ] Show variable hints
+- [ ] Add validation
+- [ ] Integrate with create/update API
+- [ ] Write tests for form
+
+### Subtask 11.6: Shortcut Integration (3 hours)
+- [ ] Add shortcut selector to agent launch form
+- [ ] Add quick action buttons to conversation view
+- [ ] Add context-aware shortcuts to workflow steps
+- [ ] Expand shortcuts before inserting into prompt
+- [ ] Allow editing after expansion
+- [ ] Write tests for integration
+
+### Subtask 11.7: Polish & UX (1 hour)
+- [ ] Improve shortcut UI
+- [ ] Add shortcut preview
+- [ ] Add keyboard shortcuts (optional)
+- [ ] End-to-end testing
+
+## Dependencies
+
+- Feature 001: Basic Agent Messaging (for using shortcuts)
+- Feature 002: Agent Conversation View (for quick actions)
+- Feature 005: Feature Management (for context)
+- Database setup
+
+## Notes
+
+- Shortcuts significantly improve productivity
+- Variable expansion makes shortcuts reusable
+- Context-aware shortcuts reduce cognitive load
+- Consider adding more pre-defined shortcuts based on usage
+
