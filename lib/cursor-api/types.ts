@@ -46,6 +46,30 @@ export interface AgentStatusResponse {
   updatedAt?: string;
 }
 
+export interface ListAgentsResponse {
+  agents: Array<{
+    id: string;
+    name?: string;
+    status: AgentStatus;
+    source?: {
+      repository: string;
+      ref?: string;
+    };
+    target?: {
+      branchName?: string;
+      url?: string;
+      prUrl?: string;
+      autoCreatePr?: boolean;
+      openAsCursorGithubApp?: boolean;
+      skipReviewerRequest?: boolean;
+    };
+    summary?: string;
+    createdAt?: string;
+    updatedAt?: string;
+  }>;
+  nextCursor?: string;
+}
+
 export class CursorAPIError extends Error {
   constructor(
     message: string,

@@ -33,10 +33,12 @@ export async function POST(
     delete (body as any).apiKey;
 
     // Forward request to Cursor API
+    // Cursor API uses Basic Auth with API key as username and empty password
+    // Format: Basic base64(apiKey:)
     const response = await fetch(`${CURSOR_API_BASE_URL}/agents/${id}/followup`, {
       method: 'POST',
       headers: {
-        'Authorization': `Basic ${Buffer.from(`:${apiKey}`).toString('base64')}`,
+        'Authorization': `Basic ${Buffer.from(`${apiKey}:`).toString('base64')}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),

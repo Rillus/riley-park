@@ -11,24 +11,35 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Try both lowercase and original case for header name
-    const apiKey = request.headers.get('x-api-key') || request.headers.get('X-Api-Key');
+    // Get API key from query string (for GET requests) or headers
+    const searchParams = request.nextUrl.searchParams;
+    const apiKey = searchParams.get('apiKey') || 
+                   request.headers.get('x-api-key') || 
+                   request.headers.get('X-Api-Key');
     
     if (!apiKey) {
-      console.error('Missing API key. Headers:', Object.fromEntries(request.headers.entries()));
+      console.error('Missing API key. Query params:', Object.fromEntries(searchParams.entries()));
+      console.error('Headers:', Object.fromEntries(request.headers.entries()));
       return NextResponse.json(
         { error: 'API key is required' },
-        { status: 401 }
+        { 
+          status: 401,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+          },
+        }
       );
     }
 
     const { id } = await params;
 
     // Forward request to Cursor API
+    // Cursor API uses Basic Auth with API key as username and empty password
+    // Format: Basic base64(apiKey:)
     const response = await fetch(`${CURSOR_API_BASE_URL}/agents/${id}`, {
       method: 'GET',
       headers: {
-        'Authorization': `Basic ${Buffer.from(`:${apiKey}`).toString('base64')}`,
+        'Authorization': `Basic ${Buffer.from(`${apiKey}:`).toString('base64')}`,
       },
     });
 
@@ -37,11 +48,20 @@ export async function GET(
     if (!response.ok) {
       return NextResponse.json(
         { error: data.error || 'Failed to get agent status', details: data },
-        { status: response.status }
+        { 
+          status: response.status,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+          },
+        }
       );
     }
 
-    return NextResponse.json(data);
+    return NextResponse.json(data, {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+      },
+    });
   } catch (error) {
     console.error('Error getting agent status:', error);
     return NextResponse.json(

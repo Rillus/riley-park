@@ -6,6 +6,7 @@ import Link from 'next/link';
 import LaunchAgentForm from '@/components/agent/LaunchAgentForm';
 import FollowupForm from '@/components/agent/FollowupForm';
 import AgentStatusDisplay from '@/components/agent/AgentStatus';
+import AgentList from '@/components/agent/AgentList';
 import ApiKeySettings from '@/components/settings/ApiKeySettings';
 import { LaunchAgentResponse } from '@/lib/cursor-api';
 import { agentStore } from '@/lib/agent-store';
@@ -114,45 +115,13 @@ Please follow the requirements, acceptance criteria, and technical requirements 
           </div>
         )}
 
-        {launchedAgents.length > 0 && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">
-              Launched Agents
-            </h2>
-            <div className="space-y-2">
-              {launchedAgents.map((agentId) => (
-                <div
-                  key={agentId}
-                  className={`p-3 rounded-md border transition-colors ${
-                    selectedAgent === agentId
-                      ? 'bg-blue-50 border-blue-200'
-                      : 'bg-gray-50 border-gray-200'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <button
-                      onClick={() => setSelectedAgent(agentId)}
-                      className="font-mono text-sm text-gray-700 dark:text-gray-300 hover:text-blue-600"
-                    >
-                      {agentId}
-                    </button>
-                    <div className="flex items-center gap-2">
-                      {selectedAgent === agentId && (
-                        <span className="text-xs text-blue-600">Selected</span>
-                      )}
-                      <Link
-                        href={`/agents/${agentId}/conversation`}
-                        className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
-                      >
-                        View Conversation
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <AgentList
+            autoRefresh={true}
+            refreshInterval={5000}
+            onAgentSelect={setSelectedAgent}
+          />
+        </div>
       </div>
     </div>
   );

@@ -9,6 +9,7 @@ import {
   FollowupResponse,
   AgentStatusResponse,
   ConversationResponse,
+  ListAgentsResponse,
   CursorAPIError,
 } from './types';
 
@@ -46,8 +47,9 @@ export class CursorAPIClient {
    * Get authentication header for Basic Auth
    */
   private getAuthHeader(): string {
-    // Cursor API uses Basic Auth with empty username and API key as password
-    const credentials = Buffer.from(`:${this.apiKey}`).toString('base64');
+    // Cursor API uses Basic Auth with API key as username and empty password
+    // Format matches curl: -u YOUR_API_KEY:
+    const credentials = Buffer.from(`${this.apiKey}:`).toString('base64');
     return `Basic ${credentials}`;
   }
 
@@ -65,10 +67,25 @@ export class CursorAPIClient {
       const existingHeaders = options.headers as Record<string, string> || {};
       const headers: Record<string, string> = { ...existingHeaders };
       
+      let finalUrl = url;
+      
       if (this.useProxy) {
-        // For proxy mode, we'll use body instead of headers (more reliable)
-        // Headers can be blocked by CORS or Next.js
-        if (options.body && typeof options.body === 'string') {
+        // For proxy mode, we need to send the API key
+        // For GET/HEAD requests, add API key to query string (can't have body)
+        // For POST/PUT/PATCH requests, add API key to body
+        const method = (options.method || 'GET').toUpperCase();
+        const isGetOrHead = method === 'GET' || method === 'HEAD';
+        
+        if (isGetOrHead) {
+          // For GET/HEAD requests, add API key to query string
+          const separator = url.includes('?') ? '&' : '?';
+          finalUrl = `${url}${separator}apiKey=${encodeURIComponent(this.apiKey)}`;
+          
+          if (process.env.NODE_ENV === 'development') {
+            console.log('Using proxy for GET request, API key in query string');
+          }
+        } else if (options.body && typeof options.body === 'string') {
+          // For POST/PUT/PATCH with body, add API key to body
           try {
             const bodyObj = JSON.parse(options.body);
             // Only add apiKey if it's not already there
@@ -88,7 +105,7 @@ export class CursorAPIClient {
             throw new Error('Invalid request body');
           }
         } else {
-          // If no body, create one with just the API key
+          // For POST/PUT/PATCH without body, create one with just the API key
           options.body = JSON.stringify({ apiKey: this.apiKey });
         }
       } else {
@@ -96,7 +113,7 @@ export class CursorAPIClient {
         headers['Authorization'] = this.getAuthHeader();
       }
 
-      const response = await fetch(url, {
+      const response = await fetch(finalUrl, {
         ...options,
         headers,
       });
@@ -121,6 +138,7 @@ export class CursorAPIClient {
       // Retry on network errors
       if (retries > 0) {
         await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
+        // Use the original url for retry (not finalUrl which may have query params)
         return this.fetchWithRetry(url, options, retries - 1);
       }
       
@@ -247,9 +265,41 @@ export class CursorAPIClient {
     const baseUrl = this.useProxy ? '/api/cursor' : this.baseUrl;
     const url = `${baseUrl}/agents/${agentId}`;
 
+    // For GET requests, fetchWithRetry will add API key to query string when using proxy
     const response = await this.fetchWithRetry(url, {
       method: 'GET',
       headers: {},
+      // Explicitly no body for GET requests
+      body: undefined,
+    });
+
+    return response.json();
+  }
+
+  /**
+   * List all agents
+   */
+  async listAgents(limit?: number, cursor?: string): Promise<ListAgentsResponse> {
+    // Ensure we're using the proxy in browser
+    const baseUrl = this.useProxy ? '/api/cursor' : this.baseUrl;
+    let url = `${baseUrl}/agents`;
+
+    // Add query parameters if provided
+    const params = new URLSearchParams();
+    if (limit) {
+      params.append('limit', limit.toString());
+    }
+    if (cursor) {
+      params.append('cursor', cursor);
+    }
+    if (params.toString()) {
+      url += `?${params.toString()}`;
+    }
+
+    const response = await this.fetchWithRetry(url, {
+      method: 'GET',
+      headers: {},
+      body: undefined,
     });
 
     return response.json();

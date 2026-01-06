@@ -1,0 +1,15 @@
+meta {
+  name: Get Agents
+  type: http
+  seq: 1
+}
+
+get {
+  url: https://api.cursor.com/v0/agents
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}
