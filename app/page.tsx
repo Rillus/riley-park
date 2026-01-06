@@ -60,6 +60,12 @@ Please follow the requirements, acceptance criteria, and technical requirements 
           </h1>
           <div className="flex gap-3">
             <Link
+              href="/projects"
+              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+            >
+              Projects
+            </Link>
+            <Link
               href="/dashboard"
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
             >
