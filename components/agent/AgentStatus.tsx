@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { CursorAPIClient, AgentStatusResponse, AgentStatus } from '@/lib/cursor-api';
 import { getApiKey } from '@/lib/cursor-api/storage';
 
@@ -146,6 +147,17 @@ export default function AgentStatusDisplay({
             Auto-refreshing every {refreshInterval / 1000} seconds...
           </p>
         )}
+
+        {/* Link to conversation view */}
+        <div className="mt-4 pt-4 border-t border-gray-200">
+          <Link
+            href={`/agents/${agentId}/conversation`}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm"
+          >
+            <span>View Conversation</span>
+            <span>→</span>
+          </Link>
+        </div>
       </div>
     </div>
   );

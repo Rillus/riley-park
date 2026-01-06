@@ -12,6 +12,10 @@ const customJestConfig = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
   },
+  // Transform ESM modules that Jest doesn't handle by default
+  transformIgnorePatterns: [
+    '/node_modules/(?!(marked)/)',
+  ],
 }
 
 // createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async
