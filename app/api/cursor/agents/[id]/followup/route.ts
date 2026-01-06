@@ -12,10 +12,10 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const body = await request.json();
+    const body = await request.json() as Record<string, unknown>;
     
     // Get API key from request body (more reliable than headers)
-    const apiKey = (body as any).apiKey;
+    const apiKey = body.apiKey as string | undefined;
     
     if (!apiKey) {
       return NextResponse.json(
@@ -30,7 +30,7 @@ export async function POST(
     }
     
     // Remove apiKey from body before forwarding to Cursor API
-    delete (body as any).apiKey;
+    delete body.apiKey;
 
     // Forward request to Cursor API
     // Cursor API uses Basic Auth with API key as username and empty password

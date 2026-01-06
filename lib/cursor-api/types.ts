@@ -102,3 +102,18 @@ export interface ConversationResponse {
   nextCursor?: string;
 }
 
+/**
+ * Stop Agent Response
+ */
+export interface StopAgentResponse {
+  id: string;
+  status: AgentStatus;
+}
+
+/**
+ * Delete Agent Response
+ */
+export interface DeleteAgentResponse {
+  success: boolean;
+}
+

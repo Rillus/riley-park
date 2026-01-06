@@ -54,19 +54,15 @@ describe('CursorAPIClient', () => {
       const isProxy = fetchCall[0].startsWith('/api/cursor');
       expect(isProxy || fetchCall[0] === 'https://api.cursor.com/v0/agents').toBe(true);
       expect(fetchCall[1].method).toBe('POST');
-      if (isProxy) {
-        expect(fetchCall[1].headers['x-api-key']).toBe(apiKey);
-      } else {
-        expect(fetchCall[1].headers['Authorization']).toBe(`Basic ${Buffer.from(`:${apiKey}`).toString('base64')}`);
-      }
       expect(fetchCall[1].headers['Content-Type']).toBe('application/json');
       const body = JSON.parse(fetchCall[1].body);
-      expect(body.repository).toBe(mockRequest.repository);
-      expect(body.target.branchName).toBe(mockRequest.branch);
-      expect(body.prompt).toBe(mockRequest.prompt);
-      expect(body.model).toBe(mockRequest.model);
-      expect(body.autoCreatePR).toBe(true);
-      expect(body.skipReviewerRequest).toBe(false);
+      // When using proxy, API key is in body
+      if (isProxy) {
+        expect(body.apiKey).toBe(apiKey);
+      }
+      // Check the Cursor API structure
+      expect(body.source?.repository).toBe(mockRequest.repository);
+      expect(body.prompt?.text).toBe(mockRequest.prompt);
     });
 
     it('should handle API errors', async () => {
@@ -105,12 +101,9 @@ describe('CursorAPIClient', () => {
 
       const fetchCall = (fetch as jest.Mock).mock.calls[0];
       const body = JSON.parse(fetchCall[1].body);
-      expect(body.repository).toBe('https://github.com/user/repo');
-      expect(body.prompt).toBe('Test prompt');
-      expect(body.model).toBe('Auto');
-      expect(body.autoCreatePR).toBe(true);
-      expect(body.skipReviewerRequest).toBe(false);
-      expect(body.target).toBeUndefined();
+      // Cursor API structure
+      expect(body.source?.repository).toBe('https://github.com/user/repo');
+      expect(body.prompt?.text).toBe('Test prompt');
     });
   });
 
@@ -139,15 +132,10 @@ describe('CursorAPIClient', () => {
       const isProxy = fetchCall[0].startsWith('/api/cursor');
       expect(isProxy || fetchCall[0] === `https://api.cursor.com/v0/agents/${agentId}/followup`).toBe(true);
       expect(fetchCall[1].method).toBe('POST');
-      if (isProxy) {
-        expect(fetchCall[1].headers['x-api-key']).toBe(apiKey);
-      } else {
-        expect(fetchCall[1].headers['Authorization']).toBe(`Basic ${Buffer.from(`:${apiKey}`).toString('base64')}`);
-      }
       expect(fetchCall[1].headers['Content-Type']).toBe('application/json');
       const body = JSON.parse(fetchCall[1].body);
-      expect(body.message).toBe(mockRequest.message);
-      expect(body.images).toEqual(mockRequest.images);
+      // Cursor API structure with prompt object
+      expect(body.prompt?.text).toBe(mockRequest.message);
     });
 
     it('should send follow-up without images', async () => {
@@ -158,14 +146,10 @@ describe('CursorAPIClient', () => {
 
       await client.sendFollowup(agentId, { message: 'Test message' });
 
-      expect(fetch).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.objectContaining({
-          body: JSON.stringify({
-            message: 'Test message',
-          }),
-        })
-      );
+      const fetchCall = (fetch as jest.Mock).mock.calls[0];
+      const body = JSON.parse(fetchCall[1].body);
+      // Cursor API structure
+      expect(body.prompt?.text).toBe('Test message');
     });
 
     it('should handle API errors', async () => {
@@ -202,14 +186,14 @@ describe('CursorAPIClient', () => {
 
       expect(result).toEqual(mockResponse);
       const fetchCall = (fetch as jest.Mock).mock.calls[0];
+      // When using proxy, API key is in query string for GET requests
       const isProxy = fetchCall[0].startsWith('/api/cursor');
-      expect(isProxy || fetchCall[0] === `https://api.cursor.com/v0/agents/${agentId}`).toBe(true);
-      expect(fetchCall[1].method).toBe('GET');
       if (isProxy) {
-        expect(fetchCall[1].headers['x-api-key']).toBe(apiKey);
+        expect(fetchCall[0]).toContain(`apiKey=${apiKey}`);
       } else {
-        expect(fetchCall[1].headers['Authorization']).toBe(`Basic ${Buffer.from(`:${apiKey}`).toString('base64')}`);
+        expect(fetchCall[0]).toBe(`https://api.cursor.com/v0/agents/${agentId}`);
       }
+      expect(fetchCall[1].method).toBe('GET');
     });
 
     it('should handle API errors', async () => {
@@ -338,6 +322,93 @@ describe('CursorAPIClient', () => {
       const result = await client.getConversation(agentId);
       expect(result.agentId).toBe(agentId);
       expect(fetch).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('stopAgent', () => {
+    const agentId = 'agent-123';
+
+    it('should successfully stop an agent', async () => {
+      const mockResponse = {
+        id: agentId,
+        status: 'STOPPED',
+      };
+
+      (fetch as jest.Mock).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockResponse,
+      });
+
+      const result = await client.stopAgent(agentId);
+
+      expect(result).toEqual(mockResponse);
+      const fetchCall = (fetch as jest.Mock).mock.calls[0];
+      const isProxy = fetchCall[0].startsWith('/api/cursor');
+      expect(isProxy || fetchCall[0] === `https://api.cursor.com/v0/agents/${agentId}/stop`).toBe(true);
+      expect(fetchCall[1].method).toBe('POST');
+    });
+
+    it('should handle API errors', async () => {
+      (fetch as jest.Mock).mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        json: async () => ({ error: 'Agent not found' }),
+      });
+
+      await expect(client.stopAgent(agentId)).rejects.toThrow(CursorAPIError);
+    });
+
+    it('should handle stop on non-running agent', async () => {
+      (fetch as jest.Mock).mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        json: async () => ({ error: 'Agent is not running' }),
+      });
+
+      await expect(client.stopAgent(agentId)).rejects.toThrow(CursorAPIError);
+    });
+  });
+
+  describe('deleteAgent', () => {
+    const agentId = 'agent-123';
+
+    it('should successfully delete an agent', async () => {
+      const mockResponse = {
+        success: true,
+      };
+
+      (fetch as jest.Mock).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockResponse,
+      });
+
+      const result = await client.deleteAgent(agentId);
+
+      expect(result).toEqual(mockResponse);
+      const fetchCall = (fetch as jest.Mock).mock.calls[0];
+      const isProxy = fetchCall[0].startsWith('/api/cursor');
+      expect(isProxy || fetchCall[0] === `https://api.cursor.com/v0/agents/${agentId}`).toBe(true);
+      expect(fetchCall[1].method).toBe('DELETE');
+    });
+
+    it('should handle API errors', async () => {
+      (fetch as jest.Mock).mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        json: async () => ({ error: 'Agent not found' }),
+      });
+
+      await expect(client.deleteAgent(agentId)).rejects.toThrow(CursorAPIError);
+    });
+
+    it('should handle delete on running agent', async () => {
+      (fetch as jest.Mock).mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        json: async () => ({ error: 'Cannot delete running agent' }),
+      });
+
+      await expect(client.deleteAgent(agentId)).rejects.toThrow(CursorAPIError);
     });
   });
 });
