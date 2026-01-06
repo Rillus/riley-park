@@ -10,6 +10,8 @@ import {
   AgentStatusResponse,
   ConversationResponse,
   ListAgentsResponse,
+  StopAgentResponse,
+  DeleteAgentResponse,
   CursorAPIError,
 } from './types';
 
@@ -316,6 +318,58 @@ export class CursorAPIClient {
     const response = await this.fetchWithRetry(url, {
       method: 'GET',
       headers: {},
+    });
+
+    return response.json();
+  }
+
+  /**
+   * Stop a running agent
+   */
+  async stopAgent(agentId: string): Promise<StopAgentResponse> {
+    // Ensure we're using the proxy in browser
+    const baseUrl = this.useProxy ? '/api/cursor' : this.baseUrl;
+    const url = `${baseUrl}/agents/${agentId}/stop`;
+
+    const body: Record<string, unknown> = {};
+
+    // Add API key to body when using proxy
+    if (this.useProxy) {
+      body.apiKey = this.apiKey;
+    }
+
+    const response = await this.fetchWithRetry(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+
+    return response.json();
+  }
+
+  /**
+   * Delete an agent (must be FINISHED or STOPPED)
+   */
+  async deleteAgent(agentId: string): Promise<DeleteAgentResponse> {
+    // Ensure we're using the proxy in browser
+    const baseUrl = this.useProxy ? '/api/cursor' : this.baseUrl;
+    const url = `${baseUrl}/agents/${agentId}`;
+
+    const body: Record<string, unknown> = {};
+
+    // Add API key to body when using proxy
+    if (this.useProxy) {
+      body.apiKey = this.apiKey;
+    }
+
+    const response = await this.fetchWithRetry(url, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
     });
 
     return response.json();

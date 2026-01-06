@@ -60,10 +60,16 @@ Please follow the requirements, acceptance criteria, and technical requirements 
           </h1>
           <div className="flex gap-3">
             <Link
-              href="/features"
+              href="/dashboard"
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
             >
-              View Features
+              Dashboard
+            </Link>
+            <Link
+              href="/features"
+              className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600"
+            >
+              Features
             </Link>
             <button
               onClick={() => setShowSettings(!showSettings)}
