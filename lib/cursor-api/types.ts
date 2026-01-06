@@ -57,3 +57,24 @@ export class CursorAPIError extends Error {
   }
 }
 
+/**
+ * Conversation types for Agent Conversation View
+ */
+
+export type MessageRole = 'user' | 'assistant';
+
+export interface ConversationMessage {
+  id: string;
+  role: MessageRole;
+  content: string;
+  timestamp: string;
+  images?: string[]; // Base64 encoded images or URLs
+}
+
+export interface ConversationResponse {
+  agentId: string;
+  messages: ConversationMessage[];
+  hasMore?: boolean;
+  nextCursor?: string;
+}
+

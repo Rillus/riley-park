@@ -8,6 +8,7 @@ import {
   FollowupRequest,
   FollowupResponse,
   AgentStatusResponse,
+  ConversationResponse,
   CursorAPIError,
 } from './types';
 
@@ -245,6 +246,22 @@ export class CursorAPIClient {
     // Ensure we're using the proxy in browser
     const baseUrl = this.useProxy ? '/api/cursor' : this.baseUrl;
     const url = `${baseUrl}/agents/${agentId}`;
+
+    const response = await this.fetchWithRetry(url, {
+      method: 'GET',
+      headers: {},
+    });
+
+    return response.json();
+  }
+
+  /**
+   * Get the conversation history for an agent
+   */
+  async getConversation(agentId: string): Promise<ConversationResponse> {
+    // Ensure we're using the proxy in browser
+    const baseUrl = this.useProxy ? '/api/cursor' : this.baseUrl;
+    const url = `${baseUrl}/agents/${agentId}/conversation`;
 
     const response = await this.fetchWithRetry(url, {
       method: 'GET',

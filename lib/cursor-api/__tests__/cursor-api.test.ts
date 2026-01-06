@@ -235,5 +235,110 @@ describe('CursorAPIClient', () => {
       expect(fetch).toHaveBeenCalledTimes(2);
     });
   });
+
+  describe('getConversation', () => {
+    const agentId = 'agent-123';
+
+    it('should successfully get agent conversation', async () => {
+      const mockResponse = {
+        agentId,
+        messages: [
+          {
+            id: 'msg-1',
+            role: 'user',
+            content: 'Implement feature X',
+            timestamp: '2025-01-01T00:00:00Z',
+          },
+          {
+            id: 'msg-2',
+            role: 'assistant',
+            content: 'I will implement feature X. Here is my plan...',
+            timestamp: '2025-01-01T00:00:01Z',
+          },
+        ],
+        hasMore: false,
+      };
+
+      (fetch as jest.Mock).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockResponse,
+      });
+
+      const result = await client.getConversation(agentId);
+
+      expect(result).toEqual(mockResponse);
+      const fetchCall = (fetch as jest.Mock).mock.calls[0];
+      const isProxy = fetchCall[0].startsWith('/api/cursor');
+      expect(isProxy || fetchCall[0] === `https://api.cursor.com/v0/agents/${agentId}/conversation`).toBe(true);
+      expect(fetchCall[1].method).toBe('GET');
+    });
+
+    it('should handle conversation with images', async () => {
+      const mockResponse = {
+        agentId,
+        messages: [
+          {
+            id: 'msg-1',
+            role: 'user',
+            content: 'Look at this screenshot',
+            timestamp: '2025-01-01T00:00:00Z',
+            images: ['data:image/png;base64,test'],
+          },
+        ],
+        hasMore: false,
+      };
+
+      (fetch as jest.Mock).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockResponse,
+      });
+
+      const result = await client.getConversation(agentId);
+
+      expect(result.messages[0].images).toEqual(['data:image/png;base64,test']);
+    });
+
+    it('should handle API errors', async () => {
+      (fetch as jest.Mock).mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        json: async () => ({ error: 'Agent not found' }),
+      });
+
+      await expect(client.getConversation(agentId)).rejects.toThrow(CursorAPIError);
+    });
+
+    it('should handle pagination cursor', async () => {
+      const mockResponse = {
+        agentId,
+        messages: [],
+        hasMore: true,
+        nextCursor: 'cursor-abc',
+      };
+
+      (fetch as jest.Mock).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockResponse,
+      });
+
+      const result = await client.getConversation(agentId);
+
+      expect(result.hasMore).toBe(true);
+      expect(result.nextCursor).toBe('cursor-abc');
+    });
+
+    it('should retry on network errors', async () => {
+      (fetch as jest.Mock)
+        .mockRejectedValueOnce(new Error('Network error'))
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ agentId, messages: [] }),
+        });
+
+      const result = await client.getConversation(agentId);
+      expect(result.agentId).toBe(agentId);
+      expect(fetch).toHaveBeenCalledTimes(2);
+    });
+  });
 });
 

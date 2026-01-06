@@ -121,24 +121,34 @@ Please follow the requirements, acceptance criteria, and technical requirements 
             </h2>
             <div className="space-y-2">
               {launchedAgents.map((agentId) => (
-                <button
+                <div
                   key={agentId}
-                  onClick={() => setSelectedAgent(agentId)}
-                  className={`w-full text-left p-3 rounded-md border transition-colors ${
+                  className={`p-3 rounded-md border transition-colors ${
                     selectedAgent === agentId
                       ? 'bg-blue-50 border-blue-200'
-                      : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                      : 'bg-gray-50 border-gray-200'
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-mono text-sm text-gray-700 dark:text-gray-300">
+                    <button
+                      onClick={() => setSelectedAgent(agentId)}
+                      className="font-mono text-sm text-gray-700 dark:text-gray-300 hover:text-blue-600"
+                    >
                       {agentId}
-                    </span>
-                    {selectedAgent === agentId && (
-                      <span className="text-xs text-blue-600">Selected</span>
-                    )}
+                    </button>
+                    <div className="flex items-center gap-2">
+                      {selectedAgent === agentId && (
+                        <span className="text-xs text-blue-600">Selected</span>
+                      )}
+                      <Link
+                        href={`/agents/${agentId}/conversation`}
+                        className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+                      >
+                        View Conversation
+                      </Link>
+                    </div>
                   </div>
-                </button>
+                </div>
               ))}
             </div>
           </div>
