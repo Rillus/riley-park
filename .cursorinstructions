@@ -1,0 +1,343 @@
+# Riley Park - Cursor Instructions
+
+## Project Overview
+
+Riley Park is a web-based orchestrator for managing multiple Cursor Cloud Agents. It provides a centralised interface for managing projects, features, and agents, with automated workflows following best-practice AI coding techniques (specification-driven development, design → implement → review → test → submit).
+
+## Documentation
+
+### Product Requirements Document (PRD)
+- **Location:** `docs/# Riley Park Web UI - Product Requiremen.md`
+- **Usage:** Always reference this document when implementing features to ensure alignment with product requirements
+- **Key Sections:**
+  - Problem Statement
+  - Product Requirements
+  - Technical Requirements
+  - API Integration Details
+
+### Feature Specifications
+- **Location:** `docs/features/`
+- **Format:** Each feature is a markdown file named `XXX-feature-name.md` (e.g., `001-basic-agent-messaging.md`)
+- **Usage:** 
+  - When implementing a new feature, read the corresponding feature specification from `docs/features/`
+  - Follow the requirements, acceptance criteria, and technical requirements outlined in the spec
+  - Reference `docs/features/README.md` for feature development guidelines
+
+### Feature Status Management
+- **CRITICAL:** When completing a feature, you MUST update the feature's status in its markdown file
+- **Location:** In the feature file at `docs/features/XXX-feature-name.md`
+- **Action:** Update the `**Status:**` field to `✅ Completed`
+- **Example:**
+  ```markdown
+  **Status:** ✅ Completed
+  ```
+- **When to update:** After the feature is fully implemented, tested, and the PR is ready for merge
+- **Note:** This is a manual step that should be included in your PR before submitting
+
+## Technology Stack
+
+### Frontend
+- **Framework:** Next.js 16.1.1 (App Router)
+- **React:** 19.2.3
+- **Styling:** Tailwind CSS 4
+- **Language:** TypeScript 5
+- **State Management:** React hooks (useState, useEffect, etc.)
+
+### Backend
+- **Framework:** Next.js API Routes
+- **Database:** SQLite (via Prisma with libSQL adapter)
+- **ORM:** Prisma 7.2.0
+- **Validation:** Zod 4.3.5
+
+### Development Tools
+- **Testing:** Jest 30.2.0 with React Testing Library
+- **Linting:** ESLint with Next.js config
+- **Package Manager:** npm
+
+## Project Structure
+
+```
+riley-park/
+├── app/                    # Next.js App Router
+│   ├── api/               # API routes
+│   ├── dashboard/         # Dashboard pages
+│   ├── features/          # Features pages
+│   ├── projects/          # Project pages
+│   └── agents/            # Agent pages
+├── components/            # React components
+│   ├── agent/             # Agent-related components
+│   ├── features/          # Feature-related components
+│   ├── projects/          # Project-related components
+│   └── ...                # Other component categories
+├── lib/                   # Shared libraries and utilities
+│   ├── cursor-api/        # Cursor API client
+│   ├── features/          # Feature management logic
+│   ├── projects/          # Project management logic
+│   ├── workflow/          # Workflow automation logic
+│   └── db.ts              # Prisma database client
+├── prisma/                # Database schema and migrations
+│   ├── schema.prisma      # Prisma schema
+│   └── migrations/        # Database migrations
+└── docs/                  # Documentation
+    ├── # Riley Park Web UI - Product Requiremen.md  # PRD
+    └── features/          # Feature specifications
+```
+
+## Coding Standards
+
+### TypeScript
+- Use strict TypeScript configuration
+- Always type function parameters and return types
+- Use interfaces for object shapes
+- Prefer `type` for unions and intersections
+- Use `const` assertions where appropriate
+
+### Code Style
+- **Indentation:** 2 spaces
+- **Quotes:** Single quotes for strings (unless JSX requires double)
+- **Semicolons:** Use semicolons
+- **Trailing Commas:** Use in multi-line objects/arrays
+- **Naming:**
+  - Components: PascalCase (e.g., `FeatureCard.tsx`)
+  - Functions/Variables: camelCase (e.g., `fetchFeatures`)
+  - Constants: UPPER_SNAKE_CASE (e.g., `WORKFLOW_STEPS_ORDER`)
+  - Types/Interfaces: PascalCase (e.g., `FeatureWithWorkflow`)
+
+### File Organisation
+- **Components:** One component per file, co-located with tests in `__tests__/` folder
+- **API Routes:** One route handler per file in `app/api/` directory
+- **Utilities:** Group related utilities in `lib/` directory
+- **Types:** Co-locate types with their related code, or in `types.ts` files
+
+### Import Order
+1. React/Next.js imports
+2. Third-party library imports
+3. Internal imports (using `@/` alias)
+4. Relative imports
+5. Type-only imports (use `import type`)
+
+### Comments
+- Use JSDoc comments for functions and classes
+- Add inline comments for complex logic
+- Keep comments up-to-date with code changes
+
+## Testing Requirements
+
+### Test-Driven Development (TDD)
+- **CRITICAL:** Follow TDD approach - write tests BEFORE implementation
+- Write tests for all new features and bug fixes
+- Tests should be in `__tests__/` folders co-located with source files
+- Use descriptive test names that explain what is being tested
+
+### Testing Tools
+- **Framework:** Jest with React Testing Library
+- **Utilities:** `@testing-library/react`, `@testing-library/user-event`, `@testing-library/jest-dom`
+- **Mocking:** Use Jest mocks for external dependencies
+
+### Test Structure
+```typescript
+describe('ComponentName', () => {
+  beforeEach(() => {
+    // Setup
+  });
+
+  it('should do something specific', async () => {
+    // Arrange
+    // Act
+    // Assert
+  });
+});
+```
+
+### Test Coverage
+- Aim for high test coverage on business logic
+- Test user interactions, not implementation details
+- Test error cases and edge cases
+- Mock external API calls
+
+## API Development
+
+### API Routes
+- Use Next.js App Router API routes (`app/api/`)
+- Export named functions: `GET`, `POST`, `PUT`, `DELETE`, etc.
+- Use `NextRequest` and `NextResponse` from `next/server`
+- Always validate input using Zod schemas
+- Return appropriate HTTP status codes
+- Handle errors gracefully with try/catch
+
+### Error Handling
+- Always wrap API logic in try/catch blocks
+- Return user-friendly error messages
+- Log errors for debugging
+- Use appropriate HTTP status codes:
+  - 200: Success
+  - 201: Created
+  - 400: Bad Request (validation errors)
+  - 404: Not Found
+  - 500: Internal Server Error
+
+### Database Operations
+- Use Prisma for all database operations
+- Use transactions for multi-step operations
+- Handle database errors appropriately
+- Use Prisma's type-safe queries
+
+## Component Development
+
+### React Components
+- Use functional components with hooks
+- Use `'use client'` directive for client components
+- Keep components small and focused
+- Extract reusable logic into custom hooks
+- Use TypeScript for props with interfaces
+
+### Styling
+- Use Tailwind CSS utility classes
+- Support dark mode with `dark:` variants
+- Use responsive design utilities
+- Keep styles co-located with components
+
+### State Management
+- Use React hooks (`useState`, `useEffect`, etc.)
+- Use context for shared state when needed
+- Avoid prop drilling - use context or composition
+
+## Database Schema
+
+### Prisma
+- Schema file: `prisma/schema.prisma`
+- Always run migrations after schema changes: `npx prisma migrate dev`
+- Generate Prisma client after schema changes: `npx prisma generate`
+- Use descriptive model and field names
+- Add indexes for frequently queried fields
+
+### Models
+- **Project:** Projects/repositories
+- **Feature:** Features within projects
+- **WorkflowStep:** Steps in feature workflow (spec, design, implement, review, test, submit)
+- **Notification:** User notifications
+- **WorkflowSettings:** Workflow automation settings
+
+## Workflow Steps
+
+Features follow a standard workflow with 6 steps:
+1. **Specification** (`spec`) - Create detailed specification
+2. **Design** (`design`) - Create technical design
+3. **Implementation** (`implement`) - Implement the feature
+4. **Review** (`review`) - Review code and PR
+5. **Testing** (`test`) - Add comprehensive tests
+6. **Submit** (`submit`) - Finalise and submit PR
+
+Each step has status: `pending`, `in_progress`, `completed`, `blocked`
+
+## Git Workflow
+
+### Branch Naming
+- Feature branches: `riley-park/feature/XXX-feature-name`
+- Bug fixes: `riley-park/fix/description`
+- Use descriptive branch names
+
+### Commit Messages
+- Use clear, descriptive commit messages
+- Reference feature numbers when applicable
+- Follow conventional commit format when possible
+
+### Pull Requests
+- Include feature number in PR title
+- Reference the feature specification
+- Update feature status to `✅ Completed` before merging
+- Ensure all tests pass
+- Request review before merging
+
+## Environment Variables
+
+Required environment variables:
+- `DATABASE_URL`: SQLite database path (default: `file:./prisma/dev.db`)
+- `CURSOR_API_KEY`: Cursor Cloud Agents API key (stored in browser localStorage)
+- `GITHUB_TOKEN`: GitHub API token (for future repository integration)
+
+## Common Patterns
+
+### API Route Pattern
+```typescript
+export async function GET(request: NextRequest) {
+  try {
+    // Implementation
+    return NextResponse.json({ data });
+  } catch (error) {
+    console.error('Error:', error);
+    return NextResponse.json(
+      { error: 'Failed to...' },
+      { status: 500 }
+    );
+  }
+}
+```
+
+### Component Pattern
+```typescript
+'use client';
+
+import { useState } from 'react';
+
+interface ComponentProps {
+  // Props
+}
+
+export default function Component({ }: ComponentProps) {
+  const [state, setState] = useState();
+  
+  // Implementation
+  
+  return (
+    // JSX
+  );
+}
+```
+
+### Validation Pattern
+```typescript
+const validationResult = schema.safeParse(data);
+if (!validationResult.success) {
+  return NextResponse.json(
+    { 
+      error: 'Validation failed', 
+      details: validationResult.error.issues 
+    },
+    { status: 400 }
+  );
+}
+```
+
+## Best Practices
+
+1. **Always read the feature specification** before implementing
+2. **Write tests first** (TDD approach)
+3. **Update feature status** when completing a feature
+4. **Validate all inputs** using Zod schemas
+5. **Handle errors gracefully** with user-friendly messages
+6. **Use TypeScript types** throughout the codebase
+7. **Keep components small** and focused
+8. **Follow the existing code style** and patterns
+9. **Document complex logic** with comments
+10. **Test edge cases** and error scenarios
+
+## Important Reminders
+
+- ✅ Always reference `docs/# Riley Park Web UI - Product Requiremen.md` for PRD
+- ✅ Always reference `docs/features/XXX-feature-name.md` for feature specs
+- ✅ **MUST update feature status to `✅ Completed`** when feature is done
+- ✅ Follow TDD - write tests before implementation
+- ✅ Use British English spelling (e.g., "centralised", "colour")
+- ✅ Run `npx prisma generate` after schema changes
+- ✅ Run `npm test` before committing
+- ✅ Ensure all linter errors are resolved
+
+## Questions?
+
+If you're unsure about:
+- Feature requirements → Check `docs/features/`
+- Product requirements → Check `docs/# Riley Park Web UI - Product Requiremen.md`
+- Code style → Look at existing code in the same directory
+- Testing approach → Check existing test files in `__tests__/` folders
+
