@@ -1,5 +1,5 @@
 /**
- * API Route for Project Features
+ * API Routes for Project Features
  * 
  * GET /api/projects/:id/features - List features for a project
  */
@@ -13,7 +13,7 @@ interface RouteParams {
 
 /**
  * GET /api/projects/:id/features
- * Get all features for a project
+ * List all features for a project with optional filtering and sorting
  */
 export async function GET(
   request: NextRequest,
@@ -21,7 +21,14 @@ export async function GET(
 ) {
   try {
     const { id: projectId } = await params;
+    const searchParams = request.nextUrl.searchParams;
     
+    // Get filter and sort parameters
+    const status = searchParams.get('status');
+    const priority = searchParams.get('priority');
+    const sortBy = searchParams.get('sortBy') || 'createdAt';
+    const sortOrder = searchParams.get('sortOrder') || 'desc';
+
     // Check if project exists
     const project = await prisma.project.findUnique({
       where: { id: projectId },
@@ -34,9 +41,24 @@ export async function GET(
       );
     }
 
+    // Build where clause
+    const where: Record<string, unknown> = { projectId };
+    if (status) {
+      where.status = status;
+    }
+    if (priority) {
+      where.priority = priority;
+    }
+
+    // Build orderBy clause
+    const validSortFields = ['createdAt', 'updatedAt', 'priority', 'status', 'title'];
+    const orderByField = validSortFields.includes(sortBy) ? sortBy : 'createdAt';
+    const orderByDirection = sortOrder === 'asc' ? 'asc' : 'desc';
+
+    // Fetch features
     const features = await prisma.feature.findMany({
-      where: { projectId },
-      orderBy: { createdAt: 'desc' },
+      where,
+      orderBy: { [orderByField]: orderByDirection },
       include: {
         workflowSteps: {
           orderBy: { createdAt: 'asc' },
@@ -44,9 +66,12 @@ export async function GET(
       },
     });
 
-    return NextResponse.json({ features, total: features.length });
+    return NextResponse.json({
+      features,
+      total: features.length,
+    });
   } catch (error) {
-    console.error('Error fetching project features:', error);
+    console.error('Error fetching features:', error);
     return NextResponse.json(
       { error: 'Failed to fetch features' },
       { status: 500 }

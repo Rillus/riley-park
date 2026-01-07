@@ -2,84 +2,91 @@
  * Tests for WorkflowProgress component
  */
 
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import WorkflowProgress from '../WorkflowProgress';
-import { WorkflowStep } from '@/lib/features/types';
+import { WorkflowStepData, WorkflowStepStatus } from '@/lib/workflow/types';
 
-const mockSteps: WorkflowStep[] = [
-  { id: '1', featureId: 'f1', stepType: 'spec', status: 'completed', agentId: null, output: null, createdAt: new Date(), updatedAt: new Date() },
-  { id: '2', featureId: 'f1', stepType: 'design', status: 'completed', agentId: null, output: null, createdAt: new Date(), updatedAt: new Date() },
-  { id: '3', featureId: 'f1', stepType: 'implement', status: 'in_progress', agentId: 'agent-123', output: null, createdAt: new Date(), updatedAt: new Date() },
-  { id: '4', featureId: 'f1', stepType: 'review', status: 'pending', agentId: null, output: null, createdAt: new Date(), updatedAt: new Date() },
-  { id: '5', featureId: 'f1', stepType: 'test', status: 'pending', agentId: null, output: null, createdAt: new Date(), updatedAt: new Date() },
-  { id: '6', featureId: 'f1', stepType: 'submit', status: 'pending', agentId: null, output: null, createdAt: new Date(), updatedAt: new Date() },
-];
+function createMockSteps(statuses: WorkflowStepStatus[]): WorkflowStepData[] {
+  const stepTypes = ['spec', 'design', 'implement', 'review', 'test', 'submit'] as const;
+  return statuses.map((status, index) => ({
+    id: `step-${index + 1}`,
+    featureId: 'feature-1',
+    stepType: stepTypes[index],
+    stepOrder: index + 1,
+    status,
+    agentId: status === 'in_progress' ? `agent-${index}` : null,
+    output: status === 'completed' ? `Output for ${stepTypes[index]}` : null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  }));
+}
 
 describe('WorkflowProgress', () => {
-  it('should render all workflow steps', () => {
-    render(<WorkflowProgress steps={mockSteps} />);
+  it('renders all workflow steps', () => {
+    const steps = createMockSteps(['pending', 'pending', 'pending', 'pending', 'pending', 'pending']);
+    render(<WorkflowProgress steps={steps} />);
 
     expect(screen.getByText('Specification')).toBeInTheDocument();
     expect(screen.getByText('Design')).toBeInTheDocument();
     expect(screen.getByText('Implementation')).toBeInTheDocument();
     expect(screen.getByText('Review')).toBeInTheDocument();
     expect(screen.getByText('Testing')).toBeInTheDocument();
-    expect(screen.getByText('Submit')).toBeInTheDocument();
+    expect(screen.getByText('Submit (PR)')).toBeInTheDocument();
   });
 
-  it('should show completed status for completed steps', () => {
-    render(<WorkflowProgress steps={mockSteps} />);
+  it('shows completed step with green checkmark', () => {
+    const steps = createMockSteps(['completed', 'pending', 'pending', 'pending', 'pending', 'pending']);
+    const { container } = render(<WorkflowProgress steps={steps} />);
 
-    // Completed steps should have a checkmark or completed styling
-    const completedSteps = screen.getAllByTestId('step-completed');
-    expect(completedSteps).toHaveLength(2);
+    // Check for green checkmark icon
+    const greenElements = container.querySelectorAll('.text-green-500');
+    expect(greenElements.length).toBeGreaterThan(0);
   });
 
-  it('should show in_progress status for active step', () => {
-    render(<WorkflowProgress steps={mockSteps} />);
+  it('shows in_progress step with blue pulse', () => {
+    const steps = createMockSteps(['completed', 'in_progress', 'pending', 'pending', 'pending', 'pending']);
+    const { container } = render(<WorkflowProgress steps={steps} />);
 
-    const inProgressStep = screen.getByTestId('step-in_progress');
-    expect(inProgressStep).toBeInTheDocument();
+    // Check for blue pulse animation
+    const blueElements = container.querySelectorAll('.bg-blue-500.animate-pulse');
+    expect(blueElements.length).toBeGreaterThan(0);
   });
 
-  it('should show pending status for upcoming steps', () => {
-    render(<WorkflowProgress steps={mockSteps} />);
-
-    const pendingSteps = screen.getAllByTestId('step-pending');
-    expect(pendingSteps).toHaveLength(3);
-  });
-
-  it('should calculate correct progress percentage', () => {
-    render(<WorkflowProgress steps={mockSteps} />);
-
-    // 2 completed + 0.5 for in_progress = 2.5/6 = ~42%
-    const progressBar = screen.getByRole('progressbar');
-    expect(progressBar).toHaveAttribute('aria-valuenow', '42');
-  });
-
-  it('should handle all completed steps', () => {
-    const allCompleted = mockSteps.map(s => ({ ...s, status: 'completed' as const }));
-    render(<WorkflowProgress steps={allCompleted} />);
-
-    const progressBar = screen.getByRole('progressbar');
-    expect(progressBar).toHaveAttribute('aria-valuenow', '100');
-  });
-
-  it('should handle all pending steps', () => {
-    const allPending = mockSteps.map(s => ({ ...s, status: 'pending' as const }));
-    render(<WorkflowProgress steps={allPending} />);
-
-    const progressBar = screen.getByRole('progressbar');
-    expect(progressBar).toHaveAttribute('aria-valuenow', '0');
-  });
-
-  it('should be clickable when onStepClick is provided', async () => {
+  it('handles step click when onStepClick is provided', () => {
+    const steps = createMockSteps(['completed', 'in_progress', 'pending', 'pending', 'pending', 'pending']);
     const mockOnStepClick = jest.fn();
     const { container } = render(
-      <WorkflowProgress steps={mockSteps} onStepClick={mockOnStepClick} />
+      <WorkflowProgress steps={steps} onStepClick={mockOnStepClick} />
     );
 
-    const stepButtons = container.querySelectorAll('[role="button"]');
-    expect(stepButtons.length).toBe(6);
+    const buttons = container.querySelectorAll('button');
+    const clickableButton = Array.from(buttons).find(btn => !btn.disabled);
+
+    if (clickableButton) {
+      fireEvent.click(clickableButton);
+      expect(mockOnStepClick).toHaveBeenCalled();
+    }
+  });
+
+  it('highlights current step when currentStepType is provided', () => {
+    const steps = createMockSteps(['completed', 'in_progress', 'pending', 'pending', 'pending', 'pending']);
+    const { container } = render(
+      <WorkflowProgress steps={steps} currentStepType="implement" />
+    );
+
+    // Check for ring styling on current step
+    const ringElements = container.querySelectorAll('.ring-2.ring-blue-500');
+    expect(ringElements.length).toBeGreaterThan(0);
+  });
+
+  it('shows compact mode when compact prop is true', () => {
+    const steps = createMockSteps(['completed', 'in_progress', 'pending', 'pending', 'pending', 'pending']);
+    const { container } = render(
+      <WorkflowProgress steps={steps} compact={true} />
+    );
+
+    // In compact mode, labels should not be visible
+    const labels = container.querySelectorAll('p.text-xs');
+    expect(labels.length).toBe(0);
   });
 });

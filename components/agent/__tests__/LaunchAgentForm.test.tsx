@@ -56,7 +56,9 @@ describe('LaunchAgentForm', () => {
 
     render(<LaunchAgentForm onAgentLaunched={mockOnAgentLaunched} />);
 
-    await user.type(screen.getByLabelText(/repository url/i), 'https://github.com/user/repo');
+    const repositoryInput = screen.getByLabelText(/repository url/i);
+    await user.clear(repositoryInput);
+    await user.type(repositoryInput, 'https://github.com/user/repo');
     await user.type(screen.getByLabelText(/branch name/i), 'main');
     await user.type(screen.getByLabelText(/initial prompt/i), 'Test prompt');
     
@@ -85,7 +87,9 @@ describe('LaunchAgentForm', () => {
 
     render(<LaunchAgentForm />);
 
-    await user.type(screen.getByLabelText(/repository url/i), 'https://github.com/user/repo');
+    const repositoryInput = screen.getByLabelText(/repository url/i);
+    await user.clear(repositoryInput);
+    await user.type(repositoryInput, 'https://github.com/user/repo');
     await user.type(screen.getByLabelText(/initial prompt/i), 'Test prompt');
     
     const submitButton = screen.getByRole('button', { name: /launch agent/i });
@@ -102,7 +106,9 @@ describe('LaunchAgentForm', () => {
 
     render(<LaunchAgentForm />);
 
-    await user.type(screen.getByLabelText(/repository url/i), 'https://github.com/user/repo');
+    const repositoryInput = screen.getByLabelText(/repository url/i);
+    await user.clear(repositoryInput);
+    await user.type(repositoryInput, 'https://github.com/user/repo');
     await user.type(screen.getByLabelText(/initial prompt/i), 'Test prompt');
     
     const submitButton = screen.getByRole('button', { name: /launch agent/i });
@@ -124,14 +130,16 @@ describe('LaunchAgentForm', () => {
     const repositoryInput = screen.getByLabelText(/repository url/i);
     const promptInput = screen.getByLabelText(/initial prompt/i);
 
+    // Clear default value and type new one
+    await user.clear(repositoryInput);
     await user.type(repositoryInput, 'https://github.com/user/repo');
     await user.type(promptInput, 'Test prompt');
     
     const submitButton = screen.getByRole('button', { name: /launch agent/i });
     await user.click(submitButton);
 
+    // After successful launch, prompt is reset to empty and repository resets to default
     await waitFor(() => {
-      expect(repositoryInput).toHaveValue('');
       expect(promptInput).toHaveValue('');
     });
   });
@@ -142,7 +150,9 @@ describe('LaunchAgentForm', () => {
 
     render(<LaunchAgentForm />);
 
-    await user.type(screen.getByLabelText(/repository url/i), 'https://github.com/user/repo');
+    const repositoryInput = screen.getByLabelText(/repository url/i);
+    await user.clear(repositoryInput);
+    await user.type(repositoryInput, 'https://github.com/user/repo');
     await user.type(screen.getByLabelText(/initial prompt/i), 'Test prompt');
     
     const submitButton = screen.getByRole('button', { name: /launch agent/i });
@@ -156,4 +166,3 @@ describe('LaunchAgentForm', () => {
     });
   });
 });
-

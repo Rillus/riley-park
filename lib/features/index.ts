@@ -1,53 +1,53 @@
 /**
- * Features Module
+ * Feature Management Library
  * 
- * Provides feature and workflow step management.
+ * Exports types, client functions, and utilities for feature management
  */
 
-// Parser exports (for reading feature spec files)
-export { parseFeatureMetadata, readFeatureFiles, readFeatureFile } from './parser';
-export type { FeatureMetadata } from './parser';
-
-// Client exports (for API interactions)
+// Types and schemas
 export {
-  fetchProjectFeatures,
-  fetchFeature,
-  fetchFeatureFull,
-  createFeature,
-  updateFeature,
-  deleteFeature,
-  updateWorkflowStep,
-  assignAgentToStep,
-  completeWorkflowStep,
-} from './client';
-
-// Type exports
-export {
-  FEATURE_PRIORITIES,
-  FEATURE_STATUSES,
-  WORKFLOW_STEP_STATUSES,
-  WORKFLOW_STEP_TYPES,
+  Priority,
+  FeatureStatus,
+  StepType,
+  WorkflowStepStatus,
+  WORKFLOW_STEPS_ORDER,
+  STEP_DISPLAY_NAMES,
   createFeatureSchema,
   updateFeatureSchema,
   updateWorkflowStepSchema,
+  getCurrentWorkflowStep,
+  calculateFeatureProgress,
 } from './types';
 
 export type {
   Feature,
   FeatureWithWorkflow,
   FeatureWithProject,
-  FeatureFull,
-  FeaturePriority,
-  FeatureStatus,
   WorkflowStep,
-  WorkflowStepType,
-  WorkflowStepStatus,
   CreateFeatureInput,
   UpdateFeatureInput,
   UpdateWorkflowStepInput,
   FeatureListResponse,
   FeatureResponse,
-  FeatureFullResponse,
-  WorkflowStepResponse,
+  WorkflowStepsResponse,
   FeatureErrorResponse,
 } from './types';
+
+// Client functions
+export {
+  fetchFeatures,
+  fetchFeature,
+  createFeature,
+  updateFeature,
+  deleteFeature,
+  fetchWorkflowSteps,
+  fetchWorkflowStep,
+  updateWorkflowStep,
+} from './client';
+
+export type { FetchFeaturesOptions, FeaturesListResponse } from './client';
+
+// Parser types (for markdown feature files)
+// Note: Parser functions are server-only and should be imported directly from './parser'
+// Only export the type for client-side use
+export type { FeatureMetadata } from './parser';

@@ -1,60 +1,65 @@
 /**
- * Feature Management Client
+ * Feature API Client
  * 
- * Client functions for interacting with the features API.
+ * Client-side functions for interacting with the Features API
  */
 
 import {
-  Feature,
   FeatureWithWorkflow,
-  FeatureFull,
+  WorkflowStep,
   CreateFeatureInput,
   UpdateFeatureInput,
-  WorkflowStep,
   UpdateWorkflowStepInput,
 } from './types';
 
+const FEATURES_API = '/api/features';
+const WORKFLOW_STEPS_API = '/api/workflow-steps';
+
+export interface FetchFeaturesOptions {
+  status?: string;
+  priority?: string;
+  sortBy?: 'createdAt' | 'updatedAt' | 'priority' | 'status' | 'title';
+  sortOrder?: 'asc' | 'desc';
+}
+
+export interface FeaturesListResponse {
+  features: FeatureWithWorkflow[];
+  total: number;
+}
+
 /**
- * Fetch all features for a project
+ * Fetch all features for a project, optionally filtered
  */
-export async function fetchProjectFeatures(projectId: string): Promise<Feature[]> {
-  const response = await fetch(`/api/projects/${projectId}/features`);
+export async function fetchFeatures(
+  projectId: string,
+  options: FetchFeaturesOptions = {}
+): Promise<FeaturesListResponse> {
+  const url = new URL(`/api/projects/${projectId}/features`, window.location.origin);
   
+  if (options.status) url.searchParams.set('status', options.status);
+  if (options.priority) url.searchParams.set('priority', options.priority);
+  if (options.sortBy) url.searchParams.set('sortBy', options.sortBy);
+  if (options.sortOrder) url.searchParams.set('sortOrder', options.sortOrder);
+
+  const response = await fetch(url.toString());
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Failed to fetch features' }));
     throw new Error(error.error || 'Failed to fetch features');
   }
-  
-  const data = await response.json();
-  return data.features;
+
+  return response.json();
 }
 
 /**
- * Fetch a single feature with workflow steps
+ * Fetch a single feature by ID
  */
-export async function fetchFeature(featureId: string): Promise<FeatureWithWorkflow> {
-  const response = await fetch(`/api/features/${featureId}`);
-  
+export async function fetchFeature(id: string): Promise<FeatureWithWorkflow & { project: { id: string; name: string } }> {
+  const response = await fetch(`${FEATURES_API}/${id}`);
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Failed to fetch feature' }));
     throw new Error(error.error || 'Failed to fetch feature');
   }
-  
-  const data = await response.json();
-  return data.feature;
-}
 
-/**
- * Fetch a feature with full details including project
- */
-export async function fetchFeatureFull(featureId: string): Promise<FeatureFull> {
-  const response = await fetch(`/api/features/${featureId}?include=project`);
-  
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Failed to fetch feature' }));
-    throw new Error(error.error || 'Failed to fetch feature');
-  }
-  
   const data = await response.json();
   return data.feature;
 }
@@ -63,19 +68,19 @@ export async function fetchFeatureFull(featureId: string): Promise<FeatureFull> 
  * Create a new feature
  */
 export async function createFeature(input: CreateFeatureInput): Promise<FeatureWithWorkflow> {
-  const response = await fetch('/api/features', {
+  const response = await fetch(FEATURES_API, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(input),
   });
-  
+
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Failed to create feature' }));
     throw new Error(error.error || 'Failed to create feature');
   }
-  
+
   const data = await response.json();
   return data.feature;
 }
@@ -84,22 +89,22 @@ export async function createFeature(input: CreateFeatureInput): Promise<FeatureW
  * Update an existing feature
  */
 export async function updateFeature(
-  featureId: string,
+  id: string,
   input: UpdateFeatureInput
 ): Promise<FeatureWithWorkflow> {
-  const response = await fetch(`/api/features/${featureId}`, {
+  const response = await fetch(`${FEATURES_API}/${id}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(input),
   });
-  
+
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Failed to update feature' }));
     throw new Error(error.error || 'Failed to update feature');
   }
-  
+
   const data = await response.json();
   return data.feature;
 }
@@ -107,11 +112,11 @@ export async function updateFeature(
 /**
  * Delete a feature
  */
-export async function deleteFeature(featureId: string): Promise<void> {
-  const response = await fetch(`/api/features/${featureId}`, {
+export async function deleteFeature(id: string): Promise<void> {
+  const response = await fetch(`${FEATURES_API}/${id}`, {
     method: 'DELETE',
   });
-  
+
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Failed to delete feature' }));
     throw new Error(error.error || 'Failed to delete feature');
@@ -119,51 +124,53 @@ export async function deleteFeature(featureId: string): Promise<void> {
 }
 
 /**
+ * Fetch workflow steps for a feature
+ */
+export async function fetchWorkflowSteps(featureId: string): Promise<WorkflowStep[]> {
+  const response = await fetch(`${FEATURES_API}/${featureId}/workflow`);
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Failed to fetch workflow steps' }));
+    throw new Error(error.error || 'Failed to fetch workflow steps');
+  }
+
+  const data = await response.json();
+  return data.workflowSteps;
+}
+
+/**
+ * Fetch a single workflow step by ID
+ */
+export async function fetchWorkflowStep(id: string): Promise<WorkflowStep & { feature: { id: string; title: string; projectId: string } }> {
+  const response = await fetch(`${WORKFLOW_STEPS_API}/${id}`);
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Failed to fetch workflow step' }));
+    throw new Error(error.error || 'Failed to fetch workflow step');
+  }
+
+  const data = await response.json();
+  return data.workflowStep;
+}
+
+/**
  * Update a workflow step
  */
 export async function updateWorkflowStep(
-  stepId: string,
+  id: string,
   input: UpdateWorkflowStepInput
 ): Promise<WorkflowStep> {
-  const response = await fetch(`/api/workflow-steps/${stepId}`, {
+  const response = await fetch(`${WORKFLOW_STEPS_API}/${id}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(input),
   });
-  
+
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Failed to update workflow step' }));
     throw new Error(error.error || 'Failed to update workflow step');
   }
-  
+
   const data = await response.json();
   return data.workflowStep;
-}
-
-/**
- * Assign an agent to a workflow step and mark it as in_progress
- */
-export async function assignAgentToStep(
-  stepId: string,
-  agentId: string
-): Promise<WorkflowStep> {
-  return updateWorkflowStep(stepId, {
-    agentId,
-    status: 'in_progress',
-  });
-}
-
-/**
- * Mark a workflow step as complete
- */
-export async function completeWorkflowStep(
-  stepId: string,
-  output?: string
-): Promise<WorkflowStep> {
-  return updateWorkflowStep(stepId, {
-    status: 'completed',
-    output: output ?? null,
-  });
 }

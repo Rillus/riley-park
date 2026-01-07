@@ -1,23 +1,50 @@
 /**
- * API Routes for Features
+ * API Routes for Feature Management
  * 
- * GET /api/features - List feature spec files (from docs/features)
- * POST /api/features - Create a new database feature
+ * GET /api/features - List all features (with optional filters)
+ * POST /api/features - Create a new feature with workflow steps
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { readFeatureFiles } from '@/lib/features/parser';
 import { prisma } from '@/lib/db';
-import { createFeatureSchema, WORKFLOW_STEP_TYPES } from '@/lib/features/types';
+import { createFeatureSchema, WORKFLOW_STEPS_ORDER } from '@/lib/features/types';
+import { getStepOrder } from '@/lib/workflow/types';
 
 /**
  * GET /api/features
- * Get all feature spec files from docs/features
+ * List all features with optional filtering
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const features = readFeatureFiles();
-    return NextResponse.json({ features });
+    const { searchParams } = new URL(request.url);
+    const projectId = searchParams.get('projectId');
+    const status = searchParams.get('status');
+    const priority = searchParams.get('priority');
+
+    const where: Record<string, unknown> = {};
+    if (projectId) where.projectId = projectId;
+    if (status) where.status = status;
+    if (priority) where.priority = priority;
+
+    const features = await prisma.feature.findMany({
+      where,
+      include: {
+        workflowSteps: {
+          orderBy: { stepOrder: 'asc' },
+        },
+        project: {
+          select: {
+            id: true,
+            name: true,
+            repositoryUrl: true,
+            defaultBranch: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return NextResponse.json({ features, total: features.length });
   } catch (error) {
     console.error('Error fetching features:', error);
     return NextResponse.json(
@@ -64,25 +91,46 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create feature with workflow steps in a transaction
-    const feature = await prisma.feature.create({
-      data: {
-        projectId,
-        title,
-        description,
-        priority,
-        workflowSteps: {
-          create: WORKFLOW_STEP_TYPES.map((stepType) => ({
-            stepType,
-            status: 'pending',
-          })),
+    // Create the feature with workflow steps in a transaction
+    const feature = await prisma.$transaction(async (tx) => {
+      // Create the feature
+      const newFeature = await tx.feature.create({
+        data: {
+          projectId,
+          title,
+          description,
+          priority,
+          status: 'planned',
         },
-      },
-      include: {
-        workflowSteps: {
-          orderBy: { createdAt: 'asc' },
+      });
+
+      // Create workflow steps with step order
+      await tx.workflowStep.createMany({
+        data: WORKFLOW_STEPS_ORDER.map((stepType) => ({
+          featureId: newFeature.id,
+          stepType,
+          stepOrder: getStepOrder(stepType),
+          status: 'pending',
+        })),
+      });
+
+      // Fetch the complete feature with workflow steps
+      return tx.feature.findUnique({
+        where: { id: newFeature.id },
+        include: {
+          workflowSteps: {
+            orderBy: { stepOrder: 'asc' },
+          },
+          project: {
+            select: {
+              id: true,
+              name: true,
+              repositoryUrl: true,
+              defaultBranch: true,
+            },
+          },
         },
-      },
+      });
     });
 
     return NextResponse.json({ feature }, { status: 201 });
@@ -94,4 +142,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

@@ -1,9 +1,6 @@
 /**
- * Workflow Components
- * 
- * Components for displaying and interacting with feature workflows.
+ * Workflow components
  */
 
 export { default as WorkflowProgress } from './WorkflowProgress';
-export { default as WorkflowStepCard } from './WorkflowStepCard';
-export { default as FeatureWorkflowView } from './FeatureWorkflowView';
+export { default as WorkflowStepActions } from './WorkflowStepActions';

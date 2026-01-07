@@ -1,7 +1,7 @@
 /**
  * API Routes for Individual Feature Management
  * 
- * GET /api/features/:id - Get feature details (DB or spec file)
+ * GET /api/features/:id - Get feature details
  * PUT /api/features/:id - Update feature
  * DELETE /api/features/:id - Delete feature
  */
@@ -28,24 +28,36 @@ export async function GET(
     const url = new URL(request.url);
     const includeProject = url.searchParams.get('include') === 'project';
 
-    // Try database first
-    const dbFeature = await prisma.feature.findUnique({
+    // Try to load the feature from the database first
+    const feature = await prisma.feature.findUnique({
       where: { id },
       include: {
         workflowSteps: {
-          orderBy: { createdAt: 'asc' },
+          // If 'stepOrder' exists, prefer it for ordering, otherwise fallback to 'createdAt'
+          orderBy: { stepOrder: 'asc' },
         },
-        ...(includeProject ? { project: true } : {}),
+        ...(includeProject
+          ? {
+              project: {
+                select: {
+                  id: true,
+                  name: true,
+                  repositoryUrl: true,
+                  defaultBranch: true,
+                },
+              },
+            }
+          : {}),
       },
     });
 
-    if (dbFeature) {
-      return NextResponse.json({ feature: dbFeature });
+    if (feature) {
+      return NextResponse.json({ feature });
     }
 
-    // Fall back to spec files
+    // Fallback to reading from the spec file
     const specFeature = readFeatureFile(id);
-    
+
     if (!specFeature) {
       return NextResponse.json(
         { error: 'Feature not found' },
@@ -87,7 +99,7 @@ export async function PUT(
       );
     }
 
-    // Validate input
+    // Validate input using zod schema
     const validationResult = updateFeatureSchema.safeParse(body);
     if (!validationResult.success) {
       return NextResponse.json(
@@ -115,7 +127,15 @@ export async function PUT(
       },
       include: {
         workflowSteps: {
-          orderBy: { createdAt: 'asc' },
+          orderBy: { stepOrder: 'asc' },
+        },
+        project: {
+          select: {
+            id: true,
+            name: true,
+            repositoryUrl: true,
+            defaultBranch: true,
+          },
         },
       },
     });
@@ -167,4 +187,3 @@ export async function DELETE(
     );
   }
 }
-

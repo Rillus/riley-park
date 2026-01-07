@@ -2,7 +2,7 @@
  * API Routes for Workflow Step Management
  * 
  * GET /api/workflow-steps/:id - Get workflow step details
- * PUT /api/workflow-steps/:id - Update workflow step (status, agent assignment)
+ * PUT /api/workflow-steps/:id - Update workflow step
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -15,7 +15,7 @@ interface RouteParams {
 
 /**
  * GET /api/workflow-steps/:id
- * Get a workflow step by ID
+ * Get a single workflow step by ID
  */
 export async function GET(
   request: NextRequest,
@@ -28,8 +28,10 @@ export async function GET(
       where: { id },
       include: {
         feature: {
-          include: {
-            project: true,
+          select: {
+            id: true,
+            title: true,
+            projectId: true,
           },
         },
       },
@@ -54,7 +56,7 @@ export async function GET(
 
 /**
  * PUT /api/workflow-steps/:id
- * Update a workflow step (status, agent ID, output)
+ * Update a workflow step (status, agentId, output)
  */
 export async function PUT(
   request: NextRequest,
@@ -93,19 +95,17 @@ export async function PUT(
 
     const { status, agentId, output } = validationResult.data;
 
-    // Build update data
-    const updateData: Record<string, unknown> = {};
-    if (status !== undefined) updateData.status = status;
-    if (agentId !== undefined) updateData.agentId = agentId;
-    if (output !== undefined) updateData.output = output;
-
     // Update the workflow step
     const workflowStep = await prisma.workflowStep.update({
       where: { id },
-      data: updateData,
+      data: {
+        ...(status !== undefined && { status }),
+        ...(agentId !== undefined && { agentId }),
+        ...(output !== undefined && { output }),
+      },
     });
 
-    // If status changed to in_progress, update feature status too
+    // If step status changed to in_progress, update feature status
     if (status === 'in_progress') {
       await prisma.feature.update({
         where: { id: existingStep.featureId },
@@ -113,18 +113,27 @@ export async function PUT(
       });
     }
 
-    // Check if all steps are completed to update feature status
+    // If step completed, check if all steps are completed
     if (status === 'completed') {
       const allSteps = await prisma.workflowStep.findMany({
         where: { featureId: existingStep.featureId },
       });
-      const allCompleted = allSteps.every(step => step.status === 'completed');
+
+      const allCompleted = allSteps.every(s => s.id === id ? true : s.status === 'completed');
       if (allCompleted) {
         await prisma.feature.update({
           where: { id: existingStep.featureId },
           data: { status: 'completed' },
         });
       }
+    }
+
+    // If step blocked, update feature status to blocked
+    if (status === 'blocked') {
+      await prisma.feature.update({
+        where: { id: existingStep.featureId },
+        data: { status: 'blocked' },
+      });
     }
 
     return NextResponse.json({ workflowStep });

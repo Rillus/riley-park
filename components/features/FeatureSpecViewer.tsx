@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FeatureMetadata } from '@/lib/features/parser';
+import type { FeatureMetadata } from '@/lib/features/parser';
 import { marked } from 'marked';
 
 interface FeatureSpecViewerProps {
