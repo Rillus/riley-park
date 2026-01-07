@@ -11,13 +11,28 @@ interface LaunchAgentFormProps {
   initialBranch?: string;
 }
 
+// Default repository URL
+const DEFAULT_REPOSITORY = 'https://github.com/rillus/riley-park';
+
+// Generate branch name from feature ID
+function generateBranchName(featureId?: string): string {
+  if (!featureId) {
+    return 'riley-park/feature/task';
+  }
+  
+  // Extract feature number and name from ID (e.g., "002-agent-conversation-view" -> "002-agent-conversation-view")
+  // Or "001b-feature-list" -> "001b-feature-list"
+  const cleanId = featureId.replace(/^(\d+[a-z]?)-/, '$1-');
+  return `riley-park/feature/${cleanId}`;
+}
+
 export default function LaunchAgentForm({ 
   onAgentLaunched,
   initialPrompt = '',
   initialRepository = '',
   initialBranch = '',
 }: LaunchAgentFormProps) {
-  const [repository, setRepository] = useState(initialRepository);
+  const [repository, setRepository] = useState(initialRepository || DEFAULT_REPOSITORY);
   const [branch, setBranch] = useState(initialBranch);
   const [prompt, setPrompt] = useState(initialPrompt);
   const [model, setModel] = useState('Auto');
@@ -28,8 +43,22 @@ export default function LaunchAgentForm({
   // Update form when initial values change
   useEffect(() => {
     if (initialPrompt) setPrompt(initialPrompt);
-    if (initialRepository) setRepository(initialRepository);
-    if (initialBranch) setBranch(initialBranch);
+    if (initialRepository) {
+      setRepository(initialRepository);
+    } else {
+      setRepository(DEFAULT_REPOSITORY);
+    }
+    if (initialBranch) {
+      setBranch(initialBranch);
+    } else if (initialPrompt) {
+      // If we have a prompt but no branch, try to extract feature ID from prompt
+      // Look for "Feature XXX:" pattern
+      const featureMatch = initialPrompt.match(/Feature\s+(\d+[a-z]?)[:\-]/i);
+      if (featureMatch) {
+        const featureId = featureMatch[1];
+        setBranch(generateBranchName(featureId));
+      }
+    }
   }, [initialPrompt, initialRepository, initialBranch]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -61,8 +90,8 @@ export default function LaunchAgentForm({
         onAgentLaunched(response);
       }
 
-      // Reset form
-      setRepository('');
+      // Reset form (but keep default repository)
+      setRepository(DEFAULT_REPOSITORY);
       setBranch('');
       setPrompt('');
     } catch (err) {
@@ -102,7 +131,7 @@ export default function LaunchAgentForm({
           value={repository}
           onChange={(e) => setRepository(e.target.value)}
           required
-          placeholder="https://github.com/user/repo"
+          placeholder={DEFAULT_REPOSITORY}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
@@ -116,7 +145,7 @@ export default function LaunchAgentForm({
           type="text"
           value={branch}
           onChange={(e) => setBranch(e.target.value)}
-          placeholder="main"
+          placeholder="riley-park/feature/002-agent-conversation-view"
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
