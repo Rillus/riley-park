@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Project } from '@/lib/projects/types';
 import { fetchProject } from '@/lib/projects';
+import { fetchFeatures, FeatureWithWorkflow } from '@/lib/features';
 
 interface ProjectDetailProps {
   projectId: string;
@@ -29,16 +31,21 @@ export default function ProjectDetail({
   onCreateFeature,
 }: ProjectDetailProps) {
   const [project, setProject] = useState<Project | null>(null);
+  const [features, setFeatures] = useState<FeatureWithWorkflow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const loadProject = async () => {
+    const loadData = async () => {
       try {
         setLoading(true);
         setError(null);
-        const data = await fetchProject(projectId);
-        setProject(data);
+        const [projectData, featuresData] = await Promise.all([
+          fetchProject(projectId),
+          fetchFeatures(projectId).catch(() => ({ features: [], total: 0 })),
+        ]);
+        setProject(projectData);
+        setFeatures(featuresData.features);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load project');
       } finally {
@@ -46,7 +53,7 @@ export default function ProjectDetail({
       }
     };
 
-    loadProject();
+    loadData();
   }, [projectId]);
 
   if (loading) {
@@ -206,12 +213,56 @@ export default function ProjectDetail({
 
         {/* Features */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-            Features
-          </h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            No features associated with this project yet.
-          </p>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              Features
+            </h2>
+            <Link
+              href={`/projects/${projectId}/features`}
+              className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+            >
+              View All →
+            </Link>
+          </div>
+          {features.length === 0 ? (
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              No features associated with this project yet.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {features.slice(0, 5).map((feature) => (
+                <Link
+                  key={feature.id}
+                  href={`/projects/${projectId}/features/${feature.id}`}
+                  className="block p-3 bg-gray-50 dark:bg-gray-700/50 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-gray-900 dark:text-gray-100">
+                      {feature.title}
+                    </span>
+                    <span
+                      className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                        feature.status === 'completed'
+                          ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                          : feature.status === 'in_progress'
+                          ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                          : feature.status === 'blocked'
+                          ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                          : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+                      }`}
+                    >
+                      {feature.status}
+                    </span>
+                  </div>
+                </Link>
+              ))}
+              {features.length > 5 && (
+                <p className="text-sm text-gray-500 dark:text-gray-400 text-center mt-2">
+                  +{features.length - 5} more features
+                </p>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

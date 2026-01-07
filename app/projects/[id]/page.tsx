@@ -39,9 +39,8 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
   };
 
   const handleCreateFeature = (proj: Project) => {
-    // Placeholder - feature management to be implemented
-    console.log('Create feature for project:', proj.name);
-    alert('Feature management coming soon!');
+    // Navigate to features page for this project
+    router.push(`/projects/${proj.id}/features`);
   };
 
   const handleFormSuccess = () => {
