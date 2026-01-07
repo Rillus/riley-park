@@ -233,8 +233,15 @@ export async function getFeatureSyncStatus(projectId: string): Promise<FeatureSy
   const response = await fetch(`${PROJECTS_API}/${projectId}/features/sync-status`);
   
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Failed to fetch sync status' }));
-    throw new Error(error.error || 'Failed to fetch sync status');
+    let errorMessage = 'Failed to fetch sync status';
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData.error || errorMessage;
+    } catch {
+      // Response body is not valid JSON, use default error message
+      console.error('Failed to fetch sync status:', errorMessage);
+    }
+    throw new Error(errorMessage);
   }
 
   return response.json();
