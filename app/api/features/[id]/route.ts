@@ -29,12 +29,14 @@ export async function GET(
       where: { id },
       include: {
         workflowSteps: {
-          orderBy: { createdAt: 'asc' },
+          orderBy: { stepOrder: 'asc' },
         },
         project: {
           select: {
             id: true,
             name: true,
+            repositoryUrl: true,
+            defaultBranch: true,
           },
         },
       },
@@ -81,7 +83,7 @@ export async function PUT(
       );
     }
 
-    // Validate input
+    // Validate input using zod schema
     const validationResult = updateFeatureSchema.safeParse(body);
     if (!validationResult.success) {
       return NextResponse.json(
@@ -109,7 +111,15 @@ export async function PUT(
       },
       include: {
         workflowSteps: {
-          orderBy: { createdAt: 'asc' },
+          orderBy: { stepOrder: 'asc' },
+        },
+        project: {
+          select: {
+            id: true,
+            name: true,
+            repositoryUrl: true,
+            defaultBranch: true,
+          },
         },
       },
     });
