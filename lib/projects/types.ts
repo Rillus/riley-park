@@ -39,6 +39,9 @@ export interface Project {
   repositoryUrl: string;
   defaultBranch: string;
   description: string | null;
+  lastSyncedAt: Date | null;
+  lastSyncStatus: string | null;
+  lastSyncError: string | null;
   createdAt: Date;
   updatedAt: Date;
 }

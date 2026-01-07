@@ -14,7 +14,7 @@ const customJestConfig = {
   },
   // Transform ESM modules that Jest doesn't handle by default
   transformIgnorePatterns: [
-    '/node_modules/(?!(marked)/)',
+    '/node_modules/(?!(marked|@octokit)/)',
   ],
 }
 

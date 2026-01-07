@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Project } from '@/lib/projects/types';
 import { fetchProject } from '@/lib/projects';
 import { fetchFeatures, FeatureWithWorkflow } from '@/lib/features';
+import { FeatureSyncButton } from '@/components/features';
 
 interface ProjectDetailProps {
   projectId: string;
@@ -35,26 +36,31 @@ export default function ProjectDetail({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const [projectData, featuresData] = await Promise.all([
-          fetchProject(projectId),
-          fetchFeatures(projectId).catch(() => ({ features: [], total: 0 })),
-        ]);
-        setProject(projectData);
-        setFeatures(featuresData.features);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load project');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadData();
+  const loadData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const [projectData, featuresData] = await Promise.all([
+        fetchProject(projectId),
+        fetchFeatures(projectId).catch(() => ({ features: [], total: 0 })),
+      ]);
+      setProject(projectData);
+      setFeatures(featuresData.features);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load project');
+    } finally {
+      setLoading(false);
+    }
   }, [projectId]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const handleSyncComplete = useCallback(() => {
+    // Reload features after sync
+    loadData();
+  }, [loadData]);
 
   if (loading) {
     return (
@@ -224,6 +230,18 @@ export default function ProjectDetail({
               View All →
             </Link>
           </div>
+          
+          {/* Feature Sync Button */}
+          <div className="mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+            <FeatureSyncButton 
+              projectId={projectId} 
+              onSyncComplete={handleSyncComplete}
+            />
+            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+              Import features from your repository&apos;s <code className="bg-gray-100 dark:bg-gray-700 px-1 py-0.5 rounded">docs/features</code> folder
+            </p>
+          </div>
+
           {features.length === 0 ? (
             <p className="text-sm text-gray-500 dark:text-gray-400">
               No features associated with this project yet.

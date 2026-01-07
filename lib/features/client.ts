@@ -14,6 +14,7 @@ import {
 
 const FEATURES_API = '/api/features';
 const WORKFLOW_STEPS_API = '/api/workflow-steps';
+const PROJECTS_API = '/api/projects';
 
 export interface FetchFeaturesOptions {
   status?: string;
@@ -173,4 +174,68 @@ export async function updateWorkflowStep(
 
   const data = await response.json();
   return data.workflowStep;
+}
+
+/**
+ * Sync result from the API
+ */
+export interface FeatureSyncResult {
+  success: boolean;
+  synced: number;
+  created: number;
+  updated: number;
+  errors: string[];
+  message: string;
+}
+
+/**
+ * Sync status from the API
+ */
+export interface FeatureSyncStatus {
+  lastSyncedAt: string | null;
+  lastSyncStatus: 'success' | 'error' | 'in_progress' | null;
+  lastSyncError: string | null;
+  hasGitHubToken: boolean;
+}
+
+/**
+ * Trigger a feature sync from the project repository
+ */
+export async function syncFeaturesFromRepository(projectId: string): Promise<FeatureSyncResult> {
+  const response = await fetch(`${PROJECTS_API}/${projectId}/sync-features`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    // Return error result with details
+    return {
+      success: false,
+      synced: data.synced || 0,
+      created: data.created || 0,
+      updated: data.updated || 0,
+      errors: data.errors || [data.error || 'Failed to sync features'],
+      message: data.error || 'Failed to sync features',
+    };
+  }
+
+  return data;
+}
+
+/**
+ * Get the sync status for a project
+ */
+export async function getFeatureSyncStatus(projectId: string): Promise<FeatureSyncStatus> {
+  const response = await fetch(`${PROJECTS_API}/${projectId}/features/sync-status`);
+  
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Failed to fetch sync status' }));
+    throw new Error(error.error || 'Failed to fetch sync status');
+  }
+
+  return response.json();
 }
