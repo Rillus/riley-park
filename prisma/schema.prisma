@@ -88,3 +88,20 @@ model WorkflowSettings {
 
   @@map("workflow_settings")
 }
+
+model Shortcut {
+  id             String   @id @default(cuid())
+  name           String
+  promptTemplate String   @map("prompt_template")
+  category       String?
+  isPredefined   Boolean  @default(false) @map("is_predefined")
+  userId         String?  @map("user_id") // Nullable for MVP - single user
+  variables      String?  // JSON string for list of variables used
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@index([isPredefined])
+  @@index([category])
+  @@map("shortcuts")
+}

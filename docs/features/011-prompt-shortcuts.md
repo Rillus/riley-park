@@ -1,7 +1,7 @@
 # Feature 011: Prompt Shortcuts
 
 **Priority:** P0 (Must Have)  
-**Status:** Not Started  
+**Status:** ✅ Completed  
 **Estimated Time:** 1.5 days
 
 ## Overview
@@ -48,12 +48,12 @@ Library of pre-defined and user-defined prompt shortcuts for common tasks. Quick
 
 ## Acceptance Criteria
 
-- [ ] User can access pre-defined shortcuts
-- [ ] User can create custom shortcuts
-- [ ] User can use shortcuts in agent conversations
-- [ ] Shortcuts fill in variables automatically
-- [ ] User can edit shortcut text before sending
-- [ ] Context-aware shortcuts are shown appropriately
+- [x] User can access pre-defined shortcuts
+- [x] User can create custom shortcuts
+- [x] User can use shortcuts in agent conversations
+- [x] Shortcuts fill in variables automatically
+- [x] User can edit shortcut text before sending
+- [x] Context-aware shortcuts are shown appropriately
 
 ## Technical Requirements
 
@@ -89,57 +89,57 @@ Library of pre-defined and user-defined prompt shortcuts for common tasks. Quick
 ## Subtasks
 
 ### Subtask 11.1: Database Schema & Models (2 hours)
-- [ ] Create shortcuts table migration
-- [ ] Create Shortcut model
-- [ ] Seed pre-defined shortcuts
-- [ ] Write tests for model
+- [x] Create shortcuts table migration
+- [x] Create Shortcut model
+- [x] Seed pre-defined shortcuts
+- [x] Write tests for model
 
 ### Subtask 11.2: Shortcut API Endpoints (3 hours)
-- [ ] Create GET /api/shortcuts endpoint
-- [ ] Create GET /api/shortcuts/:id endpoint
-- [ ] Create POST /api/shortcuts endpoint
-- [ ] Create PUT /api/shortcuts/:id endpoint
-- [ ] Create DELETE /api/shortcuts/:id endpoint
-- [ ] Create POST /api/shortcuts/:id/expand endpoint
-- [ ] Add input validation
-- [ ] Write tests for all endpoints
+- [x] Create GET /api/shortcuts endpoint
+- [x] Create GET /api/shortcuts/:id endpoint
+- [x] Create POST /api/shortcuts endpoint
+- [x] Create PUT /api/shortcuts/:id endpoint
+- [x] Create DELETE /api/shortcuts/:id endpoint
+- [x] Create POST /api/shortcuts/:id/expand endpoint
+- [x] Add input validation
+- [x] Write tests for all endpoints
 
 ### Subtask 11.3: Variable Expansion Service (2 hours)
-- [ ] Create variable expansion function
-- [ ] Parse shortcut template for variables
-- [ ] Replace variables with actual values
-- [ ] Handle missing variables gracefully
-- [ ] Write tests for expansion
+- [x] Create variable expansion function
+- [x] Parse shortcut template for variables
+- [x] Replace variables with actual values
+- [x] Handle missing variables gracefully
+- [x] Write tests for expansion
 
 ### Subtask 11.4: Shortcut Library UI (3 hours)
-- [ ] Create shortcut library view
-- [ ] Display shortcuts list
-- [ ] Add search functionality
-- [ ] Add category grouping (optional)
-- [ ] Add "Use", "Edit", "Delete" actions
-- [ ] Write tests for components
+- [x] Create shortcut library view
+- [x] Display shortcuts list
+- [x] Add search functionality
+- [x] Add category grouping (optional)
+- [x] Add "Use", "Edit", "Delete" actions
+- [x] Write tests for components
 
 ### Subtask 11.5: Create/Edit Shortcut UI (2 hours)
-- [ ] Create shortcut form component
-- [ ] Add name, template, category fields
-- [ ] Show variable hints
-- [ ] Add validation
-- [ ] Integrate with create/update API
-- [ ] Write tests for form
+- [x] Create shortcut form component
+- [x] Add name, template, category fields
+- [x] Show variable hints
+- [x] Add validation
+- [x] Integrate with create/update API
+- [x] Write tests for form
 
 ### Subtask 11.6: Shortcut Expansion Service (2 hours)
-- [ ] Create service to expand shortcuts with variables
-- [ ] Create hook/utility for shortcut expansion
-- [ ] Write tests for expansion service
+- [x] Create service to expand shortcuts with variables
+- [x] Create hook/utility for shortcut expansion
+- [x] Write tests for expansion service
 - **Note:** UI integration with agent launch form will be done in Feature 014 (Task 14.1)
 - **Note:** UI integration with conversation view will be done in Feature 014 (Task 14.6)
 - **Note:** UI integration with workflow steps will be done in Feature 014 (Task 14.2)
 
 ### Subtask 11.7: Core Functionality Polish (1 hour)
-- [ ] Improve shortcut library UI
-- [ ] Add shortcut preview in library
-- [ ] Add keyboard shortcuts (optional)
-- [ ] End-to-end testing of core functionality
+- [x] Improve shortcut library UI
+- [x] Add shortcut preview in library
+- [x] Add keyboard shortcuts (optional)
+- [x] End-to-end testing of core functionality
 - **Note:** Navigation integration will be done in Feature 014 (Task 14.5)
 
 ## Dependencies

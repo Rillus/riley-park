@@ -1,8 +1,15 @@
 // Learn more: https://github.com/testing-library/jest-dom
 import '@testing-library/jest-dom'
 
+// Polyfill for Next.js API routes (Request/Response)
+const { TextEncoder, TextDecoder } = require('util');
+global.TextEncoder = TextEncoder;
+global.TextDecoder = TextDecoder;
+
 // Mock scrollIntoView for tests
-Element.prototype.scrollIntoView = jest.fn();
+if (typeof Element !== 'undefined') {
+  Element.prototype.scrollIntoView = jest.fn();
+}
 
 // Prevent real GitHub API calls during tests
 // This ensures we never hit rate limits during test execution.
