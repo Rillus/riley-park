@@ -1,17 +1,8 @@
--- CreateTable
-CREATE TABLE "notifications" (
-    "id" TEXT NOT NULL PRIMARY KEY,
-    "type" TEXT NOT NULL,
-    "title" TEXT NOT NULL,
-    "message" TEXT NOT NULL,
-    "feature_id" TEXT,
-    "step_id" TEXT,
-    "agent_id" TEXT,
-    "read" BOOLEAN NOT NULL DEFAULT false,
-    "action_url" TEXT,
-    "action_label" TEXT,
-    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
+-- AlterTable: Add new columns to existing notifications table
+ALTER TABLE "notifications" ADD COLUMN "feature_id" TEXT;
+ALTER TABLE "notifications" ADD COLUMN "step_id" TEXT;
+ALTER TABLE "notifications" ADD COLUMN "agent_id" TEXT;
+ALTER TABLE "notifications" ADD COLUMN "action_label" TEXT;
 
 -- CreateTable
 CREATE TABLE "workflow_settings" (

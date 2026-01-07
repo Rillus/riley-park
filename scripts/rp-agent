@@ -1,0 +1,261 @@
+#!/bin/bash
+# Riley Park Agent Manager
+# Manages AI agent tmux sessions
+
+TMUX_SESSION="riley-park"
+QUEUE_FILE="$HOME/.riley-park-queue.json"
+
+# Check if jq is installed
+if ! command -v jq &> /dev/null; then
+    echo "Error: jq is required but not installed."
+    echo "Install with: brew install jq"
+    exit 1
+fi
+
+# Start mayor agent
+start_mayor() {
+    # Check if window already exists
+    if tmux list-windows -t "$TMUX_SESSION" -F "#{window_name}" 2>/dev/null | grep -q "^mayor$"; then
+        echo "Mayor agent already running"
+        echo "To view it: tmux attach -t $TMUX_SESSION:mayor"
+        echo "Or switch to it: tmux select-window -t $TMUX_SESSION:mayor"
+        return 1
+    fi
+    
+    # Create window for mayor
+    tmux new-window -t "$TMUX_SESSION" -n "mayor" -d
+    
+    # Mayor system prompt
+    MAYOR_PROMPT="You are the Mayor, an orchestrator for multiple AI coding agents in Riley Park.
+
+Your responsibilities:
+1. Review the work queue: $QUEUE_FILE
+2. Assign tasks to available workers based on their capabilities
+3. Monitor worker progress and handle blockers
+4. Coordinate between workers when tasks have dependencies
+5. Report status updates
+
+Available commands:
+- rp-queue list - View all tasks
+- rp-queue assign <task-id> <worker-id> - Assign a task
+- rp-queue status - Check current status
+- rp-agent list - See which workers are active
+
+When a worker completes a task, update the queue and assign the next task.
+If a worker is blocked, help them or reassign the task.
+
+Current time: $(date)
+Work queue location: $QUEUE_FILE
+
+Let's start by checking the work queue status."
+    
+    # Send initial prompt to mayor
+    tmux send-keys -t "$TMUX_SESSION:mayor" "cursor-agent -p \"$MAYOR_PROMPT\"" C-m
+    
+    echo "Mayor agent started in tmux window: $TMUX_SESSION:mayor"
+    echo ""
+    echo "The agent is running in a detached tmux window."
+    echo "To view it, use one of these commands:"
+    echo "  tmux attach -t $TMUX_SESSION:mayor    # Attach to the mayor window"
+    echo "  tmux attach -t $TMUX_SESSION          # Attach to the full session (all windows)"
+    echo "  tmux select-window -t $TMUX_SESSION:mayor  # Switch to mayor window (if already attached)"
+}
+
+# Start worker agent
+start_worker() {
+    if [ $# -lt 1 ]; then
+        echo "Usage: rp-agent start worker <worker-id>"
+        exit 1
+    fi
+    
+    WORKER_ID="$1"
+    WINDOW_NAME="worker-$WORKER_ID"
+    
+    # Check if window already exists
+    if tmux list-windows -t "$TMUX_SESSION" -F "#{window_name}" 2>/dev/null | grep -q "^$WINDOW_NAME$"; then
+        echo "Worker $WORKER_ID already running"
+        echo "To view it: tmux attach -t $TMUX_SESSION:$WINDOW_NAME"
+        echo "Or switch to it: tmux select-window -t $TMUX_SESSION:$WINDOW_NAME"
+        return 1
+    fi
+    
+    # Create window for worker
+    tmux new-window -t "$TMUX_SESSION" -n "$WINDOW_NAME" -d
+    
+    # Worker system prompt
+    WORKER_PROMPT="You are Worker Agent $WORKER_ID in Riley Park, executing specific coding tasks assigned by the Mayor.
+
+Your workflow:
+1. Check your assigned tasks from the work queue: $QUEUE_FILE
+2. Read the task description carefully
+3. Execute the task (code, test, document)
+4. Report completion back to the queue
+5. Request next task from Mayor
+
+Available commands:
+- rp-queue status - Check your assigned tasks
+- rp-queue complete <task-id> - Mark task complete
+- rp-queue get <task-id> - Get full task details
+
+Be thorough, test your work, and communicate clearly about progress or blockers.
+
+Current time: $(date)
+Your worker ID: $WORKER_ID
+
+Let's check what tasks are assigned to you."
+    
+    # Send initial prompt to worker
+    tmux send-keys -t "$TMUX_SESSION:$WINDOW_NAME" "cursor-agent -p \"$WORKER_PROMPT\"" C-m
+    
+    echo "Worker $WORKER_ID started in tmux window: $TMUX_SESSION:$WINDOW_NAME"
+    echo ""
+    echo "The agent is running in a detached tmux window."
+    echo "To view it, use one of these commands:"
+    echo "  tmux attach -t $TMUX_SESSION:$WINDOW_NAME    # Attach to this worker window"
+    echo "  tmux attach -t $TMUX_SESSION                 # Attach to the full session (all windows)"
+    echo "  tmux select-window -t $TMUX_SESSION:$WINDOW_NAME  # Switch to this window (if already attached)"
+}
+
+# Stop agent
+stop_agent() {
+    if [ $# -lt 1 ]; then
+        echo "Usage: rp-agent stop <agent-name>"
+        echo "  Examples: mayor, worker-1, worker-2"
+        exit 1
+    fi
+    
+    AGENT_NAME="$1"
+    
+    if [ "$AGENT_NAME" = "mayor" ]; then
+        WINDOW="mayor"
+    elif [[ "$AGENT_NAME" =~ ^worker-[0-9]+$ ]]; then
+        WINDOW="$AGENT_NAME"
+    else
+        echo "Invalid agent name: $AGENT_NAME"
+        exit 1
+    fi
+    
+    # Check if window exists
+    if tmux list-windows -t "$TMUX_SESSION" -F "#{window_name}" 2>/dev/null | grep -q "^$WINDOW$"; then
+        tmux kill-window -t "$TMUX_SESSION:$WINDOW"
+        echo "Stopped $AGENT_NAME"
+    else
+        echo "$AGENT_NAME is not running"
+    fi
+}
+
+# List running agents
+list_agents() {
+    if ! tmux has-session -t "$TMUX_SESSION" 2>/dev/null; then
+        echo "No Riley Park session found"
+        echo "Start with: rp-agent start mayor"
+        return 1
+    fi
+    
+    echo "Running Riley Park Agents:"
+    echo ""
+    
+    # Check mayor
+    if tmux list-windows -t "$TMUX_SESSION" -F "#{window_name}" 2>/dev/null | grep -q "^mayor$"; then
+        echo "  ✓ Mayor (orchestrator)"
+    fi
+    
+    # Check workers
+    for i in {1..10}; do
+        if tmux list-windows -t "$TMUX_SESSION" -F "#{window_name}" 2>/dev/null | grep -q "^worker-$i$"; then
+            echo "  ✓ Worker-$i"
+        fi
+    done
+    
+    echo ""
+    echo "Attach to session: tmux attach -t $TMUX_SESSION"
+}
+
+# Restart agent
+restart_agent() {
+    if [ $# -lt 1 ]; then
+        echo "Usage: rp-agent restart <agent-name>"
+        exit 1
+    fi
+    
+    AGENT_NAME="$1"
+    stop_agent "$AGENT_NAME"
+    sleep 1
+    
+    if [ "$AGENT_NAME" = "mayor" ]; then
+        start_mayor
+    elif [[ "$AGENT_NAME" =~ ^worker-([0-9]+)$ ]]; then
+        WORKER_ID="${BASH_REMATCH[1]}"
+        start_worker "$WORKER_ID"
+    else
+        echo "Invalid agent name: $AGENT_NAME"
+        exit 1
+    fi
+}
+
+# Setup initial tmux session
+setup_session() {
+    if tmux has-session -t "$TMUX_SESSION" 2>/dev/null; then
+        echo "Session $TMUX_SESSION already exists (this is fine)"
+        return 0
+    fi
+    
+    # Create new session (detached)
+    tmux new-session -d -s "$TMUX_SESSION"
+    
+    # Create dashboard window
+    tmux new-window -t "$TMUX_SESSION" -n "dashboard" -d
+    tmux send-keys -t "$TMUX_SESSION:dashboard" "watch -n 5 'rp-queue status && echo && rp-agent list'" C-m
+    
+    echo "Created tmux session: $TMUX_SESSION"
+    echo "Attach with: tmux attach -t $TMUX_SESSION"
+}
+
+# Main command handler
+case "$1" in
+    start)
+        case "$2" in
+            mayor)
+                setup_session
+                start_mayor
+                ;;
+            worker)
+                setup_session
+                start_worker "$3"
+                ;;
+            *)
+                echo "Usage: rp-agent start <mayor|worker> [worker-id]"
+                exit 1
+                ;;
+        esac
+        ;;
+    stop)
+        shift
+        stop_agent "$@"
+        ;;
+    list)
+        list_agents
+        ;;
+    restart)
+        shift
+        restart_agent "$@"
+        ;;
+    setup)
+        setup_session
+        ;;
+    *)
+        echo "Riley Park Agent Manager"
+        echo ""
+        echo "Usage: rp-agent <command> [args]"
+        echo ""
+        echo "Commands:"
+        echo "  setup                    Create tmux session"
+        echo "  start mayor              Start mayor agent"
+        echo "  start worker <id>        Start worker agent"
+        echo "  stop <agent-name>        Stop agent"
+        echo "  restart <agent-name>     Restart agent"
+        echo "  list                     List running agents"
+        exit 1
+        ;;
+esac
+
