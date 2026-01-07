@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Notification, NotificationListResponse } from './types';
 
 interface UseNotificationsOptions {
@@ -33,7 +33,9 @@ interface UseNotificationsResult {
 export function useNotifications(
   options: UseNotificationsOptions = {}
 ): UseNotificationsResult {
-  const { pollInterval = 5000, limit = 50 } = options;
+  // Memoize options to prevent unnecessary re-renders
+  const pollInterval = useMemo(() => options.pollInterval ?? 5000, [options.pollInterval]);
+  const limit = useMemo(() => options.limit ?? 50, [options.limit]);
 
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);

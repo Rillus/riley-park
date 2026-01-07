@@ -57,11 +57,12 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     
     // Parse and validate query parameters
+    // Convert null to undefined for Zod coercion
     const queryResult = notificationQuerySchema.safeParse({
-      limit: searchParams.get('limit'),
-      offset: searchParams.get('offset'),
-      unreadOnly: searchParams.get('unreadOnly'),
-      type: searchParams.get('type'),
+      limit: searchParams.get('limit') ?? undefined,
+      offset: searchParams.get('offset') ?? undefined,
+      unreadOnly: searchParams.get('unreadOnly') ?? undefined,
+      type: searchParams.get('type') ?? undefined,
     });
 
     if (!queryResult.success) {

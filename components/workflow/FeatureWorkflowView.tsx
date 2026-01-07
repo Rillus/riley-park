@@ -5,13 +5,13 @@ import { useRouter } from 'next/navigation';
 import WorkflowProgress from './WorkflowProgress';
 import WorkflowStepCard from './WorkflowStepCard';
 import { LaunchAgentModal } from '@/components/agent';
-import { FeatureFull, WorkflowStep } from '@/lib/features/types';
+import { FeatureWithWorkflow, WorkflowStep } from '@/lib/features/types';
 import { LaunchAgentResponse } from '@/lib/cursor-api';
-import { assignAgentToStep, completeWorkflowStep } from '@/lib/features/client';
+import { updateWorkflowStep } from '@/lib/features/client';
 import { WorkflowStepType } from '@/lib/agent-launch';
 
 interface FeatureWorkflowViewProps {
-  feature: FeatureFull;
+  feature: FeatureWithWorkflow & { project: { id: string; name: string; repositoryUrl: string; defaultBranch: string } };
   onRefresh?: () => void;
 }
 
@@ -32,7 +32,7 @@ export default function FeatureWorkflowView({
     if (workflowStepId) {
       try {
         // Update the workflow step with the agent ID and set status to in_progress
-        await assignAgentToStep(workflowStepId, agent.id);
+        await updateWorkflowStep(workflowStepId, { agentId: agent.id, status: 'in_progress' });
         onRefresh?.();
       } catch (err) {
         console.error('Failed to assign agent to step:', err);
@@ -54,7 +54,7 @@ export default function FeatureWorkflowView({
     setError(null);
     
     try {
-      await completeWorkflowStep(step.id);
+      await updateWorkflowStep(step.id, { status: 'completed' });
       onRefresh?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to mark step as complete');

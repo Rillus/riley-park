@@ -54,7 +54,7 @@ export async function fetchFeatures(
 /**
  * Fetch a single feature by ID
  */
-export async function fetchFeature(id: string): Promise<FeatureWithWorkflow & { project: { id: string; name: string } }> {
+export async function fetchFeature(id: string): Promise<FeatureWithWorkflow & { project: { id: string; name: string; repositoryUrl: string; defaultBranch: string } }> {
   const response = await fetch(`${FEATURES_API}/${id}`);
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Failed to fetch feature' }));

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, use } from 'react';
+import { useState, use, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -8,7 +8,10 @@ import {
   FeatureForm,
   DeleteFeatureDialog,
 } from '@/components/features';
+import LaunchAgentModal from '@/components/agent/LaunchAgentModal';
 import { FeatureWithWorkflow, WorkflowStep } from '@/lib/features/types';
+import { LaunchAgentResponse } from '@/lib/cursor-api';
+import { updateWorkflowStep } from '@/lib/features';
 
 interface FeatureDetailPageProps {
   params: Promise<{ id: string; featureId: string }>;
@@ -24,6 +27,9 @@ export default function FeatureDetailPage({ params }: FeatureDetailPageProps) {
   const [featureToEdit, setFeatureToEdit] = useState<FeatureWithWorkflow | null>(null);
   const [featureToDelete, setFeatureToDelete] = useState<FeatureWithWorkflow | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [launchModalOpen, setLaunchModalOpen] = useState(false);
+  const [selectedStep, setSelectedStep] = useState<WorkflowStep | null>(null);
+  const [currentFeature, setCurrentFeature] = useState<FeatureWithWorkflow & { project: { id: string; name: string; repositoryUrl: string; defaultBranch: string } } | null>(null);
 
   const handleBack = () => {
     router.push(`/projects/${projectId}/features`);
@@ -39,11 +45,29 @@ export default function FeatureDetailPage({ params }: FeatureDetailPageProps) {
   };
 
   const handleLaunchAgent = (step: WorkflowStep) => {
-    // Navigate to launch agent with step info
-    // This is a placeholder - will be implemented with agent integration
-    console.log('Launch agent for step:', step);
-    alert(`Launch agent for ${step.stepType} - Coming soon!`);
+    setSelectedStep(step);
+    setLaunchModalOpen(true);
   };
+
+  const handleAgentLaunched = async (agent: LaunchAgentResponse, workflowStepId?: string) => {
+    if (workflowStepId) {
+      try {
+        await updateWorkflowStep(workflowStepId, {
+          agentId: agent.id,
+          status: 'in_progress',
+        });
+        setRefreshKey((prev) => prev + 1);
+      } catch (error) {
+        console.error('Failed to update workflow step:', error);
+      }
+    }
+    setLaunchModalOpen(false);
+    setSelectedStep(null);
+  };
+
+  const handleFeatureLoaded = useCallback((feature: FeatureWithWorkflow & { project: { id: string; name: string; repositoryUrl: string; defaultBranch: string } }) => {
+    setCurrentFeature(feature);
+  }, []);
 
   const handleFormSuccess = () => {
     setView('detail');
@@ -95,14 +119,42 @@ export default function FeatureDetailPage({ params }: FeatureDetailPageProps) {
 
         {/* Content */}
         {view === 'detail' && (
-          <FeatureDetail
-            key={refreshKey}
-            featureId={featureId}
-            onBack={handleBack}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            onLaunchAgent={handleLaunchAgent}
-          />
+          <>
+            <FeatureDetail
+              key={refreshKey}
+              featureId={featureId}
+              onBack={handleBack}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              onLaunchAgent={handleLaunchAgent}
+              onFeatureLoaded={handleFeatureLoaded}
+            />
+            {currentFeature && selectedStep && (
+              <LaunchAgentModal
+                isOpen={launchModalOpen}
+                onClose={() => {
+                  setLaunchModalOpen(false);
+                  setSelectedStep(null);
+                }}
+                onAgentLaunched={handleAgentLaunched}
+                project={{
+                  id: currentFeature.project.id,
+                  name: currentFeature.project.name,
+                  repositoryUrl: currentFeature.project.repositoryUrl,
+                  defaultBranch: currentFeature.project.defaultBranch,
+                }}
+                feature={{
+                  id: currentFeature.id,
+                  title: currentFeature.title,
+                  description: currentFeature.description,
+                }}
+                workflowStep={{
+                  id: selectedStep.id,
+                  stepType: selectedStep.stepType as 'spec' | 'design' | 'implement' | 'review' | 'test' | 'submit',
+                }}
+              />
+            )}
+          </>
         )}
 
         {view === 'edit' && featureToEdit && (

@@ -12,7 +12,7 @@ import { fetchFeature, updateWorkflowStep } from '@/lib/features';
 import WorkflowProgress from './WorkflowProgress';
 
 interface FeatureWithProject extends FeatureWithWorkflow {
-  project: { id: string; name: string };
+  project: { id: string; name: string; repositoryUrl: string; defaultBranch: string };
 }
 
 interface FeatureDetailProps {
@@ -21,6 +21,7 @@ interface FeatureDetailProps {
   onEdit?: (feature: FeatureWithWorkflow) => void;
   onDelete?: (feature: FeatureWithWorkflow) => void;
   onLaunchAgent?: (step: WorkflowStep) => void;
+  onFeatureLoaded?: (feature: FeatureWithProject) => void;
 }
 
 function getPriorityClasses(priority: string): string {
@@ -80,6 +81,7 @@ export default function FeatureDetail({
   onEdit,
   onDelete,
   onLaunchAgent,
+  onFeatureLoaded,
 }: FeatureDetailProps) {
   const [feature, setFeature] = useState<FeatureWithProject | null>(null);
   const [loading, setLoading] = useState(true);
@@ -94,12 +96,15 @@ export default function FeatureDetail({
     try {
       const data = await fetchFeature(featureId);
       setFeature(data);
+      if (onFeatureLoaded) {
+        onFeatureLoaded(data);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch feature');
     } finally {
       setLoading(false);
     }
-  }, [featureId]);
+  }, [featureId, onFeatureLoaded]);
 
   useEffect(() => {
     loadFeature();

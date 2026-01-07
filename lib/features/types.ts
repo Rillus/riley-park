@@ -118,6 +118,7 @@ export interface WorkflowStep {
   id: string;
   featureId: string;
   stepType: StepType;
+  stepOrder: number;
   status: WorkflowStepStatus;
   agentId: string | null;
   output: string | null;

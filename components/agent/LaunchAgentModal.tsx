@@ -57,11 +57,15 @@ export default function LaunchAgentModal({
       if (feature && workflowStep) {
         // Auto-generate branch name for feature workflow
         setBranch(generateBranchName(feature.title));
-        // Pre-fill prompt based on workflow step
-        setPrompt(generateStepPrompt(workflowStep.stepType, {
+        // Pre-fill prompt with step-specific prompt and full feature description
+        const stepPrompt = generateStepPrompt(workflowStep.stepType, {
           featureName: feature.title,
           featureDescription: feature.description,
-        }));
+        });
+        // Include the full feature file content (markdown) in the prompt
+        // The description field contains the full markdown content from the feature file
+        const fullPrompt = `${stepPrompt}\n\n---\n\n## Feature Specification\n\n${feature.description}`;
+        setPrompt(fullPrompt);
       } else {
         // Use project default branch
         setBranch(project.defaultBranch);
