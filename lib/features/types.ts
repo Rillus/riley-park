@@ -91,6 +91,7 @@ export type UpdateWorkflowStepInput = z.infer<typeof updateWorkflowStepSchema>;
 export interface Feature {
   id: string;
   projectId: string;
+  externalId: string | null;
   title: string;
   description: string;
   priority: Priority;
