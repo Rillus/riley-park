@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import { 
   syncFeaturesFromRepository, 
   getFeatureSyncStatus,
@@ -138,9 +139,19 @@ export default function FeatureSyncButton({ projectId, onSyncComplete }: Feature
 
       {/* GitHub Token Warning */}
       {syncStatus && !syncStatus.hasGitHubToken && (
-        <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">
-          ⚠️ No GitHub token configured. Only public repositories will work.
-        </p>
+        <div className="mt-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md">
+          <p className="text-xs text-amber-800 dark:text-amber-300 mb-2">
+            ⚠️ No GitHub token configured. Only public repositories will work.
+          </p>
+          <p className="text-xs text-amber-700 dark:text-amber-400">
+            <Link 
+              href="/?settings=true" 
+              className="underline hover:text-amber-900 dark:hover:text-amber-200 font-medium"
+            >
+              Configure GitHub token in Settings →
+            </Link>
+          </p>
+        </div>
       )}
 
       {/* Toast Notification */}

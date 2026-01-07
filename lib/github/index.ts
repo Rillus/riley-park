@@ -10,3 +10,10 @@ export {
   type RepositoryFile,
   type RepositoryFileWithContent,
 } from './client';
+
+export {
+  getGitHubToken,
+  setGitHubToken,
+  clearGitHubToken,
+  hasGitHubToken,
+} from './storage';

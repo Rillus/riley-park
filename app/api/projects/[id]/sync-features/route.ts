@@ -43,14 +43,26 @@ export async function POST(
       );
     }
 
-    // Check GitHub token availability for private repos
-    const hasGitHubToken = !!process.env.GITHUB_TOKEN;
-    if (!hasGitHubToken) {
-      console.warn('GITHUB_TOKEN not set - only public repositories will work');
+    // Get GitHub token from request body or environment variable
+    let githubToken: string | undefined;
+    try {
+      const body = await request.json();
+      githubToken = body.githubToken || process.env.GITHUB_TOKEN;
+    } catch {
+      // If no body, use environment variable
+      githubToken = process.env.GITHUB_TOKEN;
     }
 
-    // Create sync service and run sync
-    const syncService = new FeatureSyncService();
+    // Check GitHub token availability for private repos
+    const hasGitHubToken = !!githubToken;
+    if (!hasGitHubToken) {
+      console.warn('No GitHub token provided - only public repositories will work');
+    }
+
+    // Create sync service with token and run sync
+    const { GitHubClient } = await import('@/lib/github');
+    const githubClient = githubToken ? new GitHubClient(githubToken) : undefined;
+    const syncService = new FeatureSyncService(githubClient);
     const result = await syncService.syncFeatures(id);
 
     return NextResponse.json({

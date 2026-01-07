@@ -202,11 +202,18 @@ export interface FeatureSyncStatus {
  * Trigger a feature sync from the project repository
  */
 export async function syncFeaturesFromRepository(projectId: string): Promise<FeatureSyncResult> {
+  // Get GitHub token from localStorage if available
+  const { getGitHubToken } = await import('@/lib/github/storage');
+  const githubToken = getGitHubToken();
+
   const response = await fetch(`${PROJECTS_API}/${projectId}/sync-features`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
+    body: JSON.stringify({
+      githubToken: githubToken || undefined,
+    }),
   });
 
   const data = await response.json();
@@ -230,7 +237,22 @@ export async function syncFeaturesFromRepository(projectId: string): Promise<Fea
  * Get the sync status for a project
  */
 export async function getFeatureSyncStatus(projectId: string): Promise<FeatureSyncStatus> {
-  const response = await fetch(`${PROJECTS_API}/${projectId}/features/sync-status`);
+  // Get GitHub token from localStorage if available
+  const { getGitHubToken } = await import('@/lib/github/storage');
+  const githubToken = getGitHubToken();
+
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+  };
+  
+  // Send token in header if available
+  if (githubToken) {
+    headers['x-github-token'] = githubToken;
+  }
+
+  const response = await fetch(`${PROJECTS_API}/${projectId}/features/sync-status`, {
+    headers,
+  });
   
   if (!response.ok) {
     let errorMessage = 'Failed to fetch sync status';
@@ -244,5 +266,11 @@ export async function getFeatureSyncStatus(projectId: string): Promise<FeatureSy
     throw new Error(errorMessage);
   }
 
-  return response.json();
+  const data = await response.json();
+  
+  // Override hasGitHubToken with client-side check for more accurate status
+  return {
+    ...data,
+    hasGitHubToken: !!githubToken || data.hasGitHubToken,
+  };
 }

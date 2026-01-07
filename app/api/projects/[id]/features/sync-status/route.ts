@@ -50,11 +50,15 @@ export async function GET(
       );
     }
 
+    // Check for GitHub token in environment or request header
+    const tokenFromHeader = request.headers.get('x-github-token');
+    const hasGitHubToken = !!(process.env.GITHUB_TOKEN || tokenFromHeader);
+
     const response: SyncStatusResponse = {
       lastSyncedAt: project.lastSyncedAt?.toISOString() ?? null,
       lastSyncStatus: project.lastSyncStatus ?? null,
       lastSyncError: project.lastSyncError ?? null,
-      hasGitHubToken: !!process.env.GITHUB_TOKEN,
+      hasGitHubToken,
     };
 
     return NextResponse.json(response);

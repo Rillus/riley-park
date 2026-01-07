@@ -20,6 +20,20 @@ function HomeContent() {
   const [initialRepository, setInitialRepository] = useState('');
   const [initialBranch, setInitialBranch] = useState('');
 
+  // Open settings if query parameter is present
+  useEffect(() => {
+    if (searchParams?.get('settings') === 'true') {
+      setShowSettings(true);
+      // Scroll to settings after a brief delay
+      setTimeout(() => {
+        const settingsElement = document.getElementById('settings');
+        if (settingsElement) {
+          settingsElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
+    }
+  }, [searchParams]);
+
   useEffect(() => {
     // Check for spec in URL params (from feature loader)
     const specParam = searchParams?.get('spec');
@@ -107,9 +121,9 @@ Please follow the requirements, acceptance criteria, and technical requirements 
         </div>
 
         {showSettings && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-8">
+          <div id="settings" className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-8">
             <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">
-              API Key Settings
+              Settings
             </h2>
             <ApiKeySettings />
           </div>
