@@ -1,12 +1,58 @@
 /**
  * API Routes for Feature Management
  * 
- * POST /api/features - Create a new feature
+ * GET /api/features - List all features (with optional filters)
+ * POST /api/features - Create a new feature with workflow steps
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { createFeatureSchema, WORKFLOW_STEPS_ORDER } from '@/lib/features/types';
+import { getStepOrder } from '@/lib/workflow/types';
+
+/**
+ * GET /api/features
+ * List all features with optional filtering
+ */
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const projectId = searchParams.get('projectId');
+    const status = searchParams.get('status');
+    const priority = searchParams.get('priority');
+
+    const where: Record<string, unknown> = {};
+    if (projectId) where.projectId = projectId;
+    if (status) where.status = status;
+    if (priority) where.priority = priority;
+
+    const features = await prisma.feature.findMany({
+      where,
+      include: {
+        workflowSteps: {
+          orderBy: { stepOrder: 'asc' },
+        },
+        project: {
+          select: {
+            id: true,
+            name: true,
+            repositoryUrl: true,
+            defaultBranch: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return NextResponse.json({ features, total: features.length });
+  } catch (error) {
+    console.error('Error fetching features:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch features' },
+      { status: 500 }
+    );
+  }
+}
 
 /**
  * POST /api/features
@@ -16,7 +62,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     
-    // Validate input
+    // Validate input using zod schema
     const validationResult = createFeatureSchema.safeParse(body);
     if (!validationResult.success) {
       return NextResponse.json(
@@ -58,11 +104,12 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      // Create workflow steps
+      // Create workflow steps with step order
       await tx.workflowStep.createMany({
         data: WORKFLOW_STEPS_ORDER.map((stepType) => ({
           featureId: newFeature.id,
           stepType,
+          stepOrder: getStepOrder(stepType),
           status: 'pending',
         })),
       });
@@ -72,7 +119,15 @@ export async function POST(request: NextRequest) {
         where: { id: newFeature.id },
         include: {
           workflowSteps: {
-            orderBy: { createdAt: 'asc' },
+            orderBy: { stepOrder: 'asc' },
+          },
+          project: {
+            select: {
+              id: true,
+              name: true,
+              repositoryUrl: true,
+              defaultBranch: true,
+            },
           },
         },
       });

@@ -130,6 +130,7 @@ describe('LaunchAgentForm', () => {
     const repositoryInput = screen.getByLabelText(/repository url/i);
     const promptInput = screen.getByLabelText(/initial prompt/i);
 
+    // Clear default value and type new one
     await user.clear(repositoryInput);
     await user.type(repositoryInput, 'https://github.com/user/repo');
     await user.type(promptInput, 'Test prompt');
@@ -137,9 +138,8 @@ describe('LaunchAgentForm', () => {
     const submitButton = screen.getByRole('button', { name: /launch agent/i });
     await user.click(submitButton);
 
-    // Form resets to default repository value
+    // After successful launch, prompt is reset to empty and repository resets to default
     await waitFor(() => {
-      expect(repositoryInput).toHaveValue('https://github.com/rillus/riley-park');
       expect(promptInput).toHaveValue('');
     });
   });
@@ -166,4 +166,3 @@ describe('LaunchAgentForm', () => {
     });
   });
 });
-

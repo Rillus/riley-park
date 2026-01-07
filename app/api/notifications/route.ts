@@ -2,7 +2,7 @@
  * API Routes for Notification Management
  * 
  * GET /api/notifications - List notifications (unread first)
- * POST /api/notifications - Create a new notification (internal use)
+ * POST /api/notifications - Create notification or perform actions (mark-read, delete)
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -26,7 +26,11 @@ function transformNotification(dbNotification: {
   message: string;
   read: boolean;
   actionUrl: string | null;
+  actionLabel: string | null;
   metadata: string | null;
+  featureId: string | null;
+  stepId: string | null;
+  agentId: string | null;
   createdAt: Date;
 }): Notification {
   return {
@@ -122,13 +126,64 @@ export async function GET(request: NextRequest) {
 
 /**
  * POST /api/notifications
- * Create a new notification (typically used internally by the notification service)
+ * Create a new notification or perform actions (mark-read, delete)
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     
-    // Validate input
+    // Check if this is an action request (from main branch implementation)
+    if (body.action) {
+      const { action, notificationIds, all } = body;
+
+      if (action === 'mark-read') {
+        if (all) {
+          // Mark all as read
+          await prisma.notification.updateMany({
+            where: { read: false },
+            data: { read: true },
+          });
+          return NextResponse.json({ success: true, message: 'All notifications marked as read' });
+        }
+
+        if (!notificationIds || !Array.isArray(notificationIds)) {
+          return NextResponse.json(
+            { error: 'notificationIds array is required' },
+            { status: 400 }
+          );
+        }
+
+        // Mark specific notifications as read
+        await prisma.notification.updateMany({
+          where: { id: { in: notificationIds } },
+          data: { read: true },
+        });
+
+        return NextResponse.json({ success: true, marked: notificationIds.length });
+      }
+
+      if (action === 'delete') {
+        if (!notificationIds || !Array.isArray(notificationIds)) {
+          return NextResponse.json(
+            { error: 'notificationIds array is required' },
+            { status: 400 }
+          );
+        }
+
+        await prisma.notification.deleteMany({
+          where: { id: { in: notificationIds } },
+        });
+
+        return NextResponse.json({ success: true, deleted: notificationIds.length });
+      }
+
+      return NextResponse.json(
+        { error: 'Invalid action. Use mark-read or delete' },
+        { status: 400 }
+      );
+    }
+    
+    // Otherwise, create a new notification
     const validationResult = createNotificationSchema.safeParse(body);
     if (!validationResult.success) {
       return NextResponse.json(
@@ -162,9 +217,9 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    console.error('Error creating notification:', error);
+    console.error('Error processing notification request:', error);
     return NextResponse.json(
-      { error: 'Failed to create notification' },
+      { error: 'Failed to process notification request' },
       { status: 500 }
     );
   }

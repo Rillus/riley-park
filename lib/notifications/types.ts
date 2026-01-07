@@ -12,6 +12,10 @@ export const NotificationTypes = [
   'pr_review_ready',
   'step_complete',
   'error',
+  'step_completed',
+  'step_failed',
+  'workflow_completed',
+  'step_started',
 ] as const;
 
 export type NotificationType = (typeof NotificationTypes)[number];

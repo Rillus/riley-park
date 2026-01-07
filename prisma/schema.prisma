@@ -23,48 +23,63 @@ model Project {
 }
 
 model Feature {
-  id          String         @id @default(cuid())
-  projectId   String         @map("project_id")
-  title       String
-  description String
-  priority    String         @default("medium") // high, medium, low
-  status      String         @default("planned") // planned, in_progress, completed, blocked
-  createdAt   DateTime       @default(now()) @map("created_at")
-  updatedAt   DateTime       @updatedAt @map("updated_at")
-  project     Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  id            String         @id @default(cuid())
+  projectId     String         @map("project_id")
+  title         String
+  description   String
+  priority      String         @default("medium") // high, medium, low
+  status        String         @default("planned") // planned, in_progress, completed, blocked
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+  project       Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
   workflowSteps WorkflowStep[]
 
   @@map("features")
 }
 
 model WorkflowStep {
-  id        String   @id @default(cuid())
-  featureId String   @map("feature_id")
-  stepType  String   @map("step_type") // spec, design, implement, review, test, submit
-  status    String   @default("pending") // pending, in_progress, completed, blocked
-  agentId   String?  @map("agent_id")
-  output    String?
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  feature   Feature  @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  id          String    @id @default(cuid())
+  featureId   String    @map("feature_id")
+  stepType    String    @map("step_type") // spec, design, implement, review, test, submit
+  stepOrder   Int       @default(0) @map("step_order") // Order of the step in workflow (1-6)
+  status      String    @default("pending") // pending, in_progress, completed, blocked
+  agentId     String?   @map("agent_id") // Cursor agent ID
+  output      String?   // Step output/documentation
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  feature     Feature   @relation(fields: [featureId], references: [id], onDelete: Cascade)
 
   @@map("workflow_steps")
 }
 
 model Notification {
-  id        String   @id @default(cuid())
-  userId    String?  @map("user_id")
-  type      String   // agent_finished, agent_needs_input, pr_created, pr_review_ready, step_complete, error
-  title     String
-  message   String
-  read      Boolean  @default(false)
-  actionUrl String?  @map("action_url")
-  metadata  String?  // JSON string for additional data
-  createdAt DateTime @default(now()) @map("created_at")
+  id          String   @id @default(cuid())
+  userId      String?  @map("user_id")
+  type        String   // agent_finished, agent_needs_input, pr_created, pr_review_ready, step_complete, error, step_completed, step_failed, workflow_completed, step_started
+  title       String
+  message     String
+  featureId   String?  @map("feature_id")
+  stepId      String?  @map("step_id")
+  agentId     String?  @map("agent_id")
+  read        Boolean  @default(false)
+  actionUrl   String?  @map("action_url")
+  actionLabel String?  @map("action_label")
+  metadata    String?  // JSON string for additional data
+  createdAt   DateTime @default(now()) @map("created_at")
 
   @@index([userId])
   @@index([read])
   @@index([createdAt])
   @@index([type])
   @@map("notifications")
+}
+
+model WorkflowSettings {
+  id              String   @id @default(cuid())
+  autoTransition  Boolean  @default(false) @map("auto_transition")
+  pollingInterval Int      @default(5000) @map("polling_interval") // milliseconds
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("workflow_settings")
 }
