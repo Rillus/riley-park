@@ -27,6 +27,10 @@ Features are numbered in recommended development order, starting with the most b
 11. **Feature 011: Prompt Shortcuts** - Library of reusable prompts
 12. **Feature 012: UI Foundation** - Design system, navigation, and polish
 
+### Phase 4: Integration (Feature 014)
+
+14. **Feature 014: Integration Tasks** - Integrate Features 009-012 to prevent merge conflicts when developing in parallel
+
 ## Feature Specification Format
 
 Each feature specification includes:
@@ -80,10 +84,20 @@ When a feature is completed via Cloud Agents:
 
 The feature list will automatically reflect the updated status on the next page refresh.
 
+## Parallel Development
+
+Features 009-012 can be developed in parallel, but they share some integration points that could cause merge conflicts. To prevent conflicts:
+
+1. **Core Feature Development**: Develop Features 009-012 in parallel, focusing on standalone functionality (API endpoints, database tables, isolated UI components)
+2. **Integration Phase**: After core features are complete, complete the integration tasks in Feature 014 sequentially
+
+See **Feature 014: Integration Tasks** for details on which subtasks were moved to prevent conflicts.
+
 ## Notes
 
 - Features can be developed in parallel if dependencies allow
 - Some features may need to be adjusted based on API limitations
 - UI Foundation (Feature 012) can be built alongside other features
 - Consider MVP scope - some features may be simplified for initial release
+- When developing Features 009-012 in parallel, refer to Feature 014 for integration guidance
 

@@ -120,11 +120,12 @@ Establish the foundational UI components, navigation, and design system for the 
 
 ### Subtask 12.3: Navigation System (3 hours)
 - [ ] Set up routing
-- [ ] Create navigation menu
+- [ ] Create navigation menu (with base items: Dashboard, Projects, Agents, Settings)
 - [ ] Add active state indicators
 - [ ] Add breadcrumbs component
 - [ ] Add mobile menu
 - [ ] Write tests for navigation
+- **Note:** PRs and Shortcuts navigation items will be added in Feature 014 (Task 14.5)
 
 ### Subtask 12.4: Dashboard (3 hours)
 - [ ] Create dashboard page
@@ -171,6 +172,11 @@ Establish the foundational UI components, navigation, and design system for the 
 - Frontend framework setup
 - UI component library
 - Design system decisions
+
+## Integration Tasks
+
+After completing this feature, the following integration task from Feature 014 should be completed:
+- Task 14.5: Navigation Integration (adds PRs and Shortcuts to navigation menu)
 
 ## Notes
 

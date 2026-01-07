@@ -105,20 +105,22 @@ Store and manage project and feature context to improve agent output quality and
 - [ ] Add error handling
 - [ ] Write tests for all endpoints
 
-### Subtask 9.3: Project Context UI (3 hours)
+### Subtask 9.3: Project Context UI Components (3 hours)
 - [ ] Create project context editor component
 - [ ] Add markdown editor (or textarea)
-- [ ] Display context in project detail view
+- [ ] Create standalone project context page/view
 - [ ] Add edit/save functionality
 - [ ] Add context preview
 - [ ] Write tests for components
+- **Note:** Integration with ProjectDetail view will be done in Feature 014 (Task 14.4)
 
-### Subtask 9.4: Feature Context UI (3 hours)
+### Subtask 9.4: Feature Context UI Components (3 hours)
 - [ ] Create feature context display component
 - [ ] Show context sections (description, spec, design, notes)
 - [ ] Add ability to add notes
-- [ ] Display context in feature detail view
+- [ ] Create standalone feature context page/view
 - [ ] Write tests for components
+- **Note:** Integration with FeatureDetail view will be done in Feature 014 (Task 14.3)
 
 ### Subtask 9.5: Context Auto-population (3 hours)
 - [ ] Auto-populate feature context from specification step
@@ -135,11 +137,12 @@ Store and manage project and feature context to improve agent output quality and
 - [ ] Handle token limits (truncate with warning)
 - [ ] Write tests for prompt generation
 
-### Subtask 9.7: Integration & Polish (1 hour)
-- [ ] Integrate context into agent launch flow
-- [ ] Add context preview before launching agent
+### Subtask 9.7: Core Functionality Polish (1 hour)
 - [ ] Improve context formatting
-- [ ] End-to-end testing
+- [ ] Add error handling improvements
+- [ ] End-to-end testing of core functionality
+- **Note:** Integration with agent launch flow will be done in Feature 014 (Task 14.1)
+- **Note:** Integration with workflow view will be done in Feature 014 (Task 14.2)
 
 ## Dependencies
 
@@ -147,6 +150,14 @@ Store and manage project and feature context to improve agent output quality and
 - Feature 005: Feature Management (feature data)
 - Feature 006: Agent Launch Integration (prompt generation)
 - Feature 007: Workflow Automation (step outputs)
+
+## Integration Tasks
+
+After completing this feature, the following integration tasks from Feature 014 should be completed:
+- Task 14.1: Agent Launch Form Integration (integrates context preview)
+- Task 14.2: Workflow Step Component Integration (integrates context display)
+- Task 14.3: Feature Detail View Integration (integrates context display)
+- Task 14.4: Project Detail View Integration (integrates context editor)
 
 ## Notes
 

@@ -197,9 +197,11 @@ export default function FeatureDetail({
         {/* Title and Badges */}
         <div className="flex items-start justify-between mb-4">
           <div>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
-              {feature.project.name}
-            </p>
+            {feature.project && (
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
+                {feature.project.name}
+              </p>
+            )}
             <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
               {feature.title}
             </h1>

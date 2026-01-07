@@ -127,19 +127,20 @@ Library of pre-defined and user-defined prompt shortcuts for common tasks. Quick
 - [ ] Integrate with create/update API
 - [ ] Write tests for form
 
-### Subtask 11.6: Shortcut Integration (3 hours)
-- [ ] Add shortcut selector to agent launch form
-- [ ] Add quick action buttons to conversation view
-- [ ] Add context-aware shortcuts to workflow steps
-- [ ] Expand shortcuts before inserting into prompt
-- [ ] Allow editing after expansion
-- [ ] Write tests for integration
+### Subtask 11.6: Shortcut Expansion Service (2 hours)
+- [ ] Create service to expand shortcuts with variables
+- [ ] Create hook/utility for shortcut expansion
+- [ ] Write tests for expansion service
+- **Note:** UI integration with agent launch form will be done in Feature 014 (Task 14.1)
+- **Note:** UI integration with conversation view will be done in Feature 014 (Task 14.6)
+- **Note:** UI integration with workflow steps will be done in Feature 014 (Task 14.2)
 
-### Subtask 11.7: Polish & UX (1 hour)
-- [ ] Improve shortcut UI
-- [ ] Add shortcut preview
+### Subtask 11.7: Core Functionality Polish (1 hour)
+- [ ] Improve shortcut library UI
+- [ ] Add shortcut preview in library
 - [ ] Add keyboard shortcuts (optional)
-- [ ] End-to-end testing
+- [ ] End-to-end testing of core functionality
+- **Note:** Navigation integration will be done in Feature 014 (Task 14.5)
 
 ## Dependencies
 
@@ -147,6 +148,14 @@ Library of pre-defined and user-defined prompt shortcuts for common tasks. Quick
 - Feature 002: Agent Conversation View (for quick actions)
 - Feature 005: Feature Management (for context)
 - Database setup
+
+## Integration Tasks
+
+After completing this feature, the following integration tasks from Feature 014 should be completed:
+- Task 14.1: Agent Launch Form Integration (integrates shortcut selector)
+- Task 14.2: Workflow Step Component Integration (integrates context-aware shortcuts)
+- Task 14.5: Navigation Integration (adds Shortcuts to navigation)
+- Task 14.6: Conversation View Integration (integrates quick action buttons)
 
 ## Notes
 

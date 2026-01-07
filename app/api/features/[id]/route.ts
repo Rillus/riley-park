@@ -25,8 +25,6 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const url = new URL(request.url);
-    const includeProject = url.searchParams.get('include') === 'project';
 
     // Try to load the feature from the database first
     const feature = await prisma.feature.findUnique({
@@ -36,18 +34,14 @@ export async function GET(
           // If 'stepOrder' exists, prefer it for ordering, otherwise fallback to 'createdAt'
           orderBy: { stepOrder: 'asc' },
         },
-        ...(includeProject
-          ? {
-              project: {
-                select: {
-                  id: true,
-                  name: true,
-                  repositoryUrl: true,
-                  defaultBranch: true,
-                },
-              },
-            }
-          : {}),
+        project: {
+          select: {
+            id: true,
+            name: true,
+            repositoryUrl: true,
+            defaultBranch: true,
+          },
+        },
       },
     });
 

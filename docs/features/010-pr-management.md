@@ -155,12 +155,11 @@ Track and manage Pull Requests created by agents. Link PRs to features and workf
 - [ ] Add actions (if GitHub integration available)
 - [ ] Write tests for component
 
-### Subtask 10.6: PR in Workflow View (2 hours)
-- [ ] Display PR link in workflow step
-- [ ] Show PR status badge
-- [ ] Add navigation to PR detail
+### Subtask 10.6: PR Detection Integration (2 hours)
+- [ ] Integrate PR detection with agent conversation monitoring
 - [ ] Update workflow step when PR detected
-- [ ] Write tests for workflow integration
+- [ ] Write tests for detection integration
+- **Note:** UI integration with workflow view will be done in Feature 014 (Task 14.2)
 
 ### Subtask 10.7: PR Status Updates (2 hours)
 - [ ] Create PR status polling (if GitHub API available)
@@ -169,12 +168,14 @@ Track and manage Pull Requests created by agents. Link PRs to features and workf
 - [ ] Notify user of status changes
 - [ ] Write tests for status updates
 
-### Subtask 10.8: Integration & Polish (2 hours)
-- [ ] Integrate PR detection with agent conversation monitoring
-- [ ] Connect all components
+### Subtask 10.8: Core Functionality Polish (2 hours)
+- [ ] Connect all standalone components
 - [ ] Add loading states
 - [ ] Improve error handling
-- [ ] End-to-end testing
+- [ ] End-to-end testing of core functionality
+- **Note:** Navigation integration will be done in Feature 014 (Task 14.5)
+- **Note:** Workflow view integration will be done in Feature 014 (Task 14.2)
+- **Note:** Feature detail view integration will be done in Feature 014 (Task 14.3)
 
 ## Dependencies
 
@@ -182,6 +183,13 @@ Track and manage Pull Requests created by agents. Link PRs to features and workf
 - Feature 005: Feature Management (for PR linking)
 - Feature 007: Workflow Automation (for step linking)
 - Optional: GitHub API integration
+
+## Integration Tasks
+
+After completing this feature, the following integration tasks from Feature 014 should be completed:
+- Task 14.2: Workflow Step Component Integration (integrates PR display in workflow)
+- Task 14.3: Feature Detail View Integration (integrates PR list)
+- Task 14.5: Navigation Integration (adds PRs to navigation)
 
 ## Notes
 
