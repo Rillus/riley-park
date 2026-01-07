@@ -4,7 +4,9 @@ import { useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ProjectDetail, ProjectForm, DeleteConfirmDialog } from '@/components/projects';
+import { LaunchAgentModal } from '@/components/agent';
 import { Project } from '@/lib/projects/types';
+import { LaunchAgentResponse } from '@/lib/cursor-api';
 
 type View = 'detail' | 'edit';
 
@@ -18,6 +20,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
   const [view, setView] = useState<View>('detail');
   const [project, setProject] = useState<Project | null>(null);
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
+  const [projectForAgent, setProjectForAgent] = useState<Project | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const handleBack = () => {
@@ -34,8 +37,13 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
   };
 
   const handleLaunchAgent = (proj: Project) => {
-    // Navigate to the launch agent page with repository pre-filled
-    router.push(`/?repository=${encodeURIComponent(proj.repositoryUrl)}&branch=${encodeURIComponent(proj.defaultBranch)}`);
+    setProjectForAgent(proj);
+  };
+
+  const handleAgentLaunched = (agent: LaunchAgentResponse) => {
+    setProjectForAgent(null);
+    // Navigate to the agent conversation view
+    router.push(`/agents/${agent.id}/conversation`);
   };
 
   const handleCreateFeature = (proj: Project) => {
@@ -124,6 +132,21 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
           onConfirm={handleDeleteConfirm}
           onCancel={handleDeleteCancel}
         />
+
+        {/* Launch Agent Modal */}
+        {projectForAgent && (
+          <LaunchAgentModal
+            isOpen={true}
+            onClose={() => setProjectForAgent(null)}
+            onAgentLaunched={handleAgentLaunched}
+            project={{
+              id: projectForAgent.id,
+              name: projectForAgent.name,
+              repositoryUrl: projectForAgent.repositoryUrl,
+              defaultBranch: projectForAgent.defaultBranch,
+            }}
+          />
+        )}
       </div>
     </div>
   );

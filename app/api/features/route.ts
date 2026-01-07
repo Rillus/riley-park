@@ -56,18 +56,18 @@ export async function GET(request: NextRequest) {
 
 /**
  * POST /api/features
- * Create a new feature with automatically initialised workflow steps
+ * Create a new feature with workflow steps
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    
-    // Validate input using zod schema
+
+    // Validate input
     const validationResult = createFeatureSchema.safeParse(body);
     if (!validationResult.success) {
       return NextResponse.json(
-        { 
-          error: 'Validation failed', 
+        {
+          error: 'Validation failed',
           details: validationResult.error.issues.map(issue => ({
             field: issue.path.join('.'),
             message: issue.message,

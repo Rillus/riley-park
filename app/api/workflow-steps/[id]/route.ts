@@ -23,7 +23,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    
+
     const workflowStep = await prisma.workflowStep.findUnique({
       where: { id },
       include: {
@@ -118,7 +118,7 @@ export async function PUT(
       const allSteps = await prisma.workflowStep.findMany({
         where: { featureId: existingStep.featureId },
       });
-      
+
       const allCompleted = allSteps.every(s => s.id === id ? true : s.status === 'completed');
       if (allCompleted) {
         await prisma.feature.update({
