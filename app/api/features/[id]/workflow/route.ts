@@ -1,9 +1,10 @@
 /**
- * Feature Workflow API
- * GET /api/features/:id/workflow - Get workflow steps for a feature
+ * API Routes for Feature Workflow Steps
+ * 
+ * GET /api/features/:id/workflow - Get workflow steps for a feature with state info
  */
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import {
   validateWorkflowState,
@@ -13,15 +14,24 @@ import {
 } from '@/lib/workflow/state-management';
 import { WorkflowStepData } from '@/lib/workflow/types';
 
+interface RouteParams {
+  params: Promise<{ id: string }>;
+}
+
+/**
+ * GET /api/features/:id/workflow
+ * Get all workflow steps for a feature with workflow state information
+ */
 export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  request: NextRequest,
+  { params }: RouteParams
 ) {
   try {
-    const { id } = await params;
+    const { id: featureId } = await params;
 
+    // Check if feature exists and get workflow steps
     const feature = await prisma.feature.findUnique({
-      where: { id },
+      where: { id: featureId },
       include: {
         workflowSteps: {
           orderBy: { stepOrder: 'asc' },
@@ -36,7 +46,7 @@ export async function GET(
       );
     }
 
-    // Map to WorkflowStepData type
+    // Map to WorkflowStepData type for state management functions
     const steps: WorkflowStepData[] = feature.workflowSteps.map((s) => ({
       id: s.id,
       featureId: s.featureId,
@@ -56,8 +66,8 @@ export async function GET(
     const readySteps = getReadySteps(steps);
 
     return NextResponse.json({
-      featureId: id,
-      steps,
+      featureId,
+      workflowSteps: steps,
       state: {
         valid: validation.valid,
         canExecute: validation.canExecute,
@@ -69,9 +79,9 @@ export async function GET(
       progress,
     });
   } catch (error) {
-    console.error('Error fetching workflow:', error);
+    console.error('Error fetching workflow steps:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch workflow' },
+      { error: 'Failed to fetch workflow steps' },
       { status: 500 }
     );
   }

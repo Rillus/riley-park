@@ -6,7 +6,7 @@ import { marked } from 'marked';
 
 interface FeatureSpecViewerProps {
   feature: FeatureMetadata;
-  onLoadIntoChat?: (spec: string) => void;
+  onLoadIntoChat?: (spec: string, feature?: FeatureMetadata) => void;
   onClose?: () => void;
 }
 
@@ -35,7 +35,7 @@ export default function FeatureSpecViewer({
 ${feature.content}
 
 Please follow the requirements, acceptance criteria, and technical requirements outlined in the specification.`;
-      onLoadIntoChat(formattedSpec);
+      onLoadIntoChat(formattedSpec, feature);
     }
   };
 

@@ -41,7 +41,7 @@ model WorkflowStep {
   id          String    @id @default(cuid())
   featureId   String    @map("feature_id")
   stepType    String    @map("step_type") // spec, design, implement, review, test, submit
-  stepOrder   Int       @map("step_order") // Order of the step in workflow (1-6)
+  stepOrder   Int       @default(0) @map("step_order") // Order of the step in workflow (1-6)
   status      String    @default("pending") // pending, in_progress, completed, blocked
   agentId     String?   @map("agent_id") // Cursor agent ID
   output      String?   // Step output/documentation
