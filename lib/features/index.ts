@@ -47,11 +47,7 @@ export {
 
 export type { FetchFeaturesOptions, FeaturesListResponse } from './client';
 
-// Parser functions (for markdown feature files)
-export {
-  parseFeatureMetadata,
-  readFeatureFiles,
-  readFeatureFile,
-} from './parser';
-
+// Parser types (for markdown feature files)
+// Note: Parser functions are server-only and should be imported directly from './parser'
+// Only export the type for client-side use
 export type { FeatureMetadata } from './parser';

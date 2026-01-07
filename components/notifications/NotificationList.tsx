@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import NotificationItem from './NotificationItem';
-import { NotificationData } from '@/lib/workflow/types';
+import { Notification } from '@/lib/notifications/types';
 
 interface NotificationListProps {
   limit?: number;
@@ -15,7 +15,7 @@ export default function NotificationList({
   unreadOnly = false,
   onNotificationRead,
 }: NotificationListProps) {
-  const [notifications, setNotifications] = useState<NotificationData[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -47,9 +47,10 @@ export default function NotificationList({
 
   useEffect(() => {
     fetchNotifications();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [limit, unreadOnly]);
 
-  const handleMarkRead = async (id: string) => {
+  const handleMarkAsRead = async (id: string) => {
     try {
       await fetch('/api/notifications', {
         method: 'POST',
@@ -69,6 +70,27 @@ export default function NotificationList({
       onNotificationRead?.();
     } catch (err) {
       console.error('Error marking notification as read:', err);
+    }
+  };
+
+  const handleDismiss = async (id: string) => {
+    try {
+      await fetch('/api/notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'delete',
+          notificationIds: [id],
+        }),
+      });
+
+      // Update local state
+      setNotifications((prev) => prev.filter((n) => n.id !== id));
+
+      // Notify parent
+      onNotificationRead?.();
+    } catch (err) {
+      console.error('Error dismissing notification:', err);
     }
   };
 
@@ -124,7 +146,8 @@ export default function NotificationList({
         <NotificationItem
           key={notification.id}
           notification={notification}
-          onMarkRead={handleMarkRead}
+          onMarkAsRead={handleMarkAsRead}
+          onDismiss={handleDismiss}
         />
       ))}
     </div>

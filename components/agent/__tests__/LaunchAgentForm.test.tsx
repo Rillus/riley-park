@@ -87,7 +87,9 @@ describe('LaunchAgentForm', () => {
 
     render(<LaunchAgentForm />);
 
-    await user.type(screen.getByLabelText(/repository url/i), 'https://github.com/user/repo');
+    const repositoryInput = screen.getByLabelText(/repository url/i);
+    await user.clear(repositoryInput);
+    await user.type(repositoryInput, 'https://github.com/user/repo');
     await user.type(screen.getByLabelText(/initial prompt/i), 'Test prompt');
     
     const submitButton = screen.getByRole('button', { name: /launch agent/i });
@@ -104,7 +106,9 @@ describe('LaunchAgentForm', () => {
 
     render(<LaunchAgentForm />);
 
-    await user.type(screen.getByLabelText(/repository url/i), 'https://github.com/user/repo');
+    const repositoryInput = screen.getByLabelText(/repository url/i);
+    await user.clear(repositoryInput);
+    await user.type(repositoryInput, 'https://github.com/user/repo');
     await user.type(screen.getByLabelText(/initial prompt/i), 'Test prompt');
     
     const submitButton = screen.getByRole('button', { name: /launch agent/i });
@@ -146,7 +150,9 @@ describe('LaunchAgentForm', () => {
 
     render(<LaunchAgentForm />);
 
-    await user.type(screen.getByLabelText(/repository url/i), 'https://github.com/user/repo');
+    const repositoryInput = screen.getByLabelText(/repository url/i);
+    await user.clear(repositoryInput);
+    await user.type(repositoryInput, 'https://github.com/user/repo');
     await user.type(screen.getByLabelText(/initial prompt/i), 'Test prompt');
     
     const submitButton = screen.getByRole('button', { name: /launch agent/i });
@@ -160,4 +166,3 @@ describe('LaunchAgentForm', () => {
     });
   });
 });
-

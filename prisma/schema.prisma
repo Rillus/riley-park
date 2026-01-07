@@ -54,7 +54,8 @@ model WorkflowStep {
 
 model Notification {
   id          String   @id @default(cuid())
-  type        String   // step_completed, step_failed, workflow_completed
+  userId      String?  @map("user_id")
+  type        String   // agent_finished, agent_needs_input, pr_created, pr_review_ready, step_complete, error, step_completed, step_failed, workflow_completed, step_started
   title       String
   message     String
   featureId   String?  @map("feature_id")
@@ -63,8 +64,13 @@ model Notification {
   read        Boolean  @default(false)
   actionUrl   String?  @map("action_url")
   actionLabel String?  @map("action_label")
+  metadata    String?  // JSON string for additional data
   createdAt   DateTime @default(now()) @map("created_at")
 
+  @@index([userId])
+  @@index([read])
+  @@index([createdAt])
+  @@index([type])
   @@map("notifications")
 }
 

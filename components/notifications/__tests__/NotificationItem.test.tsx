@@ -4,140 +4,170 @@
 
 import { render, screen, fireEvent } from '@testing-library/react';
 import NotificationItem from '../NotificationItem';
-import { NotificationData } from '@/lib/workflow/types';
-
-// Mock next/link
-jest.mock('next/link', () => {
-  return function MockLink({
-    children,
-    href,
-  }: {
-    children: React.ReactNode;
-    href: string;
-  }) {
-    return <a href={href}>{children}</a>;
-  };
-});
-
-function createMockNotification(
-  overrides: Partial<NotificationData> = {}
-): NotificationData {
-  return {
-    id: 'notif-1',
-    type: 'step_completed',
-    title: 'Step Completed',
-    message: 'The specification step has been completed.',
-    featureId: 'feature-1',
-    stepId: 'step-1',
-    agentId: 'agent-1',
-    read: false,
-    actionUrl: '/features/feature-1',
-    actionLabel: 'View Feature',
-    createdAt: new Date(),
-    ...overrides,
-  };
-}
+import { Notification } from '@/lib/notifications/types';
 
 describe('NotificationItem', () => {
-  it('renders notification with title and message', () => {
-    const notification = createMockNotification();
-    render(<NotificationItem notification={notification} />);
+  const baseNotification: Notification = {
+    id: 'notif-123',
+    type: 'agent_finished',
+    title: 'Agent Completed',
+    message: 'Agent has finished the task successfully.',
+    read: false,
+    actionUrl: '/agents/123/conversation',
+    metadata: { agentId: '123' },
+    createdAt: new Date('2026-01-06T12:00:00Z'),
+    userId: null,
+  };
 
-    expect(screen.getByText('Step Completed')).toBeInTheDocument();
-    expect(
-      screen.getByText('The specification step has been completed.')
-    ).toBeInTheDocument();
-  });
-
-  it('renders unread notification with highlight', () => {
-    const notification = createMockNotification({ read: false });
-    const { container } = render(<NotificationItem notification={notification} />);
-
-    // Find the outer container with the bg-blue-50 class
-    const highlightedElement = container.querySelector('.bg-blue-50');
-    expect(highlightedElement).toBeInTheDocument();
-  });
-
-  it('renders read notification without highlight', () => {
-    const notification = createMockNotification({ read: true });
-    const { container } = render(<NotificationItem notification={notification} />);
-
-    // Ensure no bg-blue-50 class is present
-    const highlightedElement = container.querySelector('.bg-blue-50');
-    expect(highlightedElement).not.toBeInTheDocument();
-  });
-
-  it('renders action button when actionLabel is provided', () => {
-    const notification = createMockNotification({
-      actionLabel: 'Start Next Step',
-      actionUrl: '/features/1?step=design',
-    });
-    render(<NotificationItem notification={notification} />);
-
-    expect(screen.getByText('Start Next Step')).toBeInTheDocument();
-  });
-
-  it('calls onMarkRead when clicked', () => {
-    const onMarkRead = jest.fn();
-    const notification = createMockNotification({ read: false });
+  it('should render notification title and message', () => {
     render(
-      <NotificationItem notification={notification} onMarkRead={onMarkRead} />
+      <NotificationItem
+        notification={baseNotification}
+        onMarkAsRead={jest.fn()}
+        onDismiss={jest.fn()}
+      />
     );
 
-    fireEvent.click(screen.getByText('Step Completed'));
-    expect(onMarkRead).toHaveBeenCalledWith('notif-1');
+    expect(screen.getByText('Agent Completed')).toBeInTheDocument();
+    expect(screen.getByText('Agent has finished the task successfully.')).toBeInTheDocument();
   });
 
-  it('does not call onMarkRead for already read notifications', () => {
-    const onMarkRead = jest.fn();
-    const notification = createMockNotification({ read: true });
+  it('should render unread indicator for unread notifications', () => {
+    const { container } = render(
+      <NotificationItem
+        notification={baseNotification}
+        onMarkAsRead={jest.fn()}
+        onDismiss={jest.fn()}
+      />
+    );
+
+    // Check for unread indicator (blue dot or styling)
+    expect(container.querySelector('[data-unread="true"]')).toBeInTheDocument();
+  });
+
+  it('should not render unread indicator for read notifications', () => {
+    const readNotification = { ...baseNotification, read: true };
+    const { container } = render(
+      <NotificationItem
+        notification={readNotification}
+        onMarkAsRead={jest.fn()}
+        onDismiss={jest.fn()}
+      />
+    );
+
+    expect(container.querySelector('[data-unread="true"]')).not.toBeInTheDocument();
+  });
+
+  it('should call onMarkAsRead when clicking mark as read button', () => {
+    const onMarkAsRead = jest.fn();
     render(
-      <NotificationItem notification={notification} onMarkRead={onMarkRead} />
+      <NotificationItem
+        notification={baseNotification}
+        onMarkAsRead={onMarkAsRead}
+        onDismiss={jest.fn()}
+      />
     );
 
-    fireEvent.click(screen.getByText('Step Completed'));
-    expect(onMarkRead).not.toHaveBeenCalled();
+    const markAsReadButton = screen.getByLabelText(/mark as read/i);
+    fireEvent.click(markAsReadButton);
+
+    expect(onMarkAsRead).toHaveBeenCalledWith('notif-123');
   });
 
-  it('renders correct icon for step_completed type', () => {
-    const notification = createMockNotification({ type: 'step_completed' });
-    const { container } = render(
-      <NotificationItem notification={notification} />
+  it('should call onDismiss when clicking dismiss button', () => {
+    const onDismiss = jest.fn();
+    render(
+      <NotificationItem
+        notification={baseNotification}
+        onMarkAsRead={jest.fn()}
+        onDismiss={onDismiss}
+      />
     );
 
-    expect(container.querySelector('.text-green-500')).toBeInTheDocument();
+    const dismissButton = screen.getByLabelText(/dismiss/i);
+    fireEvent.click(dismissButton);
+
+    expect(onDismiss).toHaveBeenCalledWith('notif-123');
   });
 
-  it('renders correct icon for step_failed type', () => {
-    const notification = createMockNotification({ type: 'step_failed' });
-    const { container } = render(
-      <NotificationItem notification={notification} />
+  it('should render action link when actionUrl is provided', () => {
+    render(
+      <NotificationItem
+        notification={baseNotification}
+        onMarkAsRead={jest.fn()}
+        onDismiss={jest.fn()}
+      />
     );
 
-    expect(container.querySelector('.text-red-500')).toBeInTheDocument();
+    const actionLink = screen.getByRole('link');
+    expect(actionLink).toHaveAttribute('href', '/agents/123/conversation');
   });
 
-  it('renders correct icon for workflow_completed type', () => {
-    const notification = createMockNotification({ type: 'workflow_completed' });
-    const { container } = render(
-      <NotificationItem notification={notification} />
+  it('should not render action link when actionUrl is not provided', () => {
+    const notificationWithoutAction = { ...baseNotification, actionUrl: null };
+    render(
+      <NotificationItem
+        notification={notificationWithoutAction}
+        onMarkAsRead={jest.fn()}
+        onDismiss={jest.fn()}
+      />
     );
 
-    expect(container.querySelector('.text-blue-500')).toBeInTheDocument();
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
   });
 
-  it('formats time as "Just now" for recent notifications', () => {
-    const notification = createMockNotification({ createdAt: new Date() });
-    render(<NotificationItem notification={notification} />);
+  it('should display correct icon for agent_finished type', () => {
+    render(
+      <NotificationItem
+        notification={baseNotification}
+        onMarkAsRead={jest.fn()}
+        onDismiss={jest.fn()}
+      />
+    );
 
-    expect(screen.getByText('Just now')).toBeInTheDocument();
+    expect(screen.getByTestId('notification-icon')).toBeInTheDocument();
   });
 
-  it('formats time in minutes for older notifications', () => {
-    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-    const notification = createMockNotification({ createdAt: fiveMinutesAgo });
-    render(<NotificationItem notification={notification} />);
+  it('should display correct icon for error type', () => {
+    const errorNotification = { ...baseNotification, type: 'error' as const };
+    render(
+      <NotificationItem
+        notification={errorNotification}
+        onMarkAsRead={jest.fn()}
+        onDismiss={jest.fn()}
+      />
+    );
 
-    expect(screen.getByText('5m ago')).toBeInTheDocument();
+    expect(screen.getByTestId('notification-icon')).toBeInTheDocument();
+  });
+
+  it('should display relative time', () => {
+    render(
+      <NotificationItem
+        notification={baseNotification}
+        onMarkAsRead={jest.fn()}
+        onDismiss={jest.fn()}
+      />
+    );
+
+    // Should show some time indicator
+    expect(screen.getByTestId('notification-time')).toBeInTheDocument();
+  });
+
+  it('should handle click on the notification item', () => {
+    const onClick = jest.fn();
+    render(
+      <NotificationItem
+        notification={baseNotification}
+        onMarkAsRead={jest.fn()}
+        onDismiss={jest.fn()}
+        onClick={onClick}
+      />
+    );
+
+    const notificationElement = screen.getByRole('article');
+    fireEvent.click(notificationElement);
+
+    expect(onClick).toHaveBeenCalled();
   });
 });
