@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { createFeatureSchema, WORKFLOW_STEPS_ORDER } from '@/lib/features/types';
 import { getStepOrder } from '@/lib/workflow/types';
+import { populateDescriptionContext } from '@/lib/context/auto-populate';
 
 /**
  * GET /api/features
@@ -132,6 +133,11 @@ export async function POST(request: NextRequest) {
         },
       });
     });
+
+    // Auto-populate description context
+    if (feature && description) {
+      await populateDescriptionContext(feature.id, description);
+    }
 
     return NextResponse.json({ feature }, { status: 201 });
   } catch (error) {

@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { WorkflowStepData, WORKFLOW_STEP_LABELS, FeatureData } from '@/lib/workflow/types';
 import { getAutoTransitionPrompt } from '@/lib/workflow/auto-transition';
+import { fetchShortcuts, expandShortcut, Shortcut } from '@/lib/shortcuts/client';
 
 interface WorkflowStepActionsProps {
   step: WorkflowStepData;
@@ -36,8 +37,66 @@ export default function WorkflowStepActions({
   const [output, setOutput] = useState('');
   const [blockReason, setBlockReason] = useState('');
   const [loading, setLoading] = useState(false);
+  const [shortcuts, setShortcuts] = useState<Shortcut[]>([]);
+  const [shortcutsLoading, setShortcutsLoading] = useState(false);
 
   const stepLabel = WORKFLOW_STEP_LABELS[step.stepType];
+
+  // Load context-aware shortcuts
+  useEffect(() => {
+    setShortcutsLoading(true);
+    fetchShortcuts()
+      .then((data) => {
+        // Filter shortcuts based on step type (context-aware)
+        const contextAwareShortcuts = data.shortcuts.filter((shortcut) => {
+          const lowerName = shortcut.name.toLowerCase();
+          const lowerCategory = shortcut.category?.toLowerCase() || '';
+          const stepType = step.stepType.toLowerCase();
+
+          // Map step types to relevant shortcuts
+          if (stepType.includes('spec') || stepType.includes('specification')) {
+            return lowerName.includes('spec') || lowerCategory.includes('specification');
+          } else if (stepType.includes('review')) {
+            return lowerName.includes('review') || lowerCategory.includes('review');
+          } else if (stepType.includes('test')) {
+            return lowerName.includes('test') || lowerCategory.includes('testing');
+          } else if (stepType.includes('implement') || stepType.includes('development')) {
+            return lowerName.includes('refactor') || lowerCategory.includes('code quality');
+          } else if (stepType.includes('design')) {
+            return lowerCategory.includes('design') || lowerName.includes('design');
+          }
+          
+          // Default: show first few shortcuts
+          return true;
+        });
+        
+        // Limit to 3 most relevant shortcuts
+        setShortcuts(contextAwareShortcuts.slice(0, 3));
+      })
+      .catch((err) => {
+        console.error('Failed to load shortcuts:', err);
+      })
+      .finally(() => {
+        setShortcutsLoading(false);
+      });
+  }, [step.stepType]);
+
+  // Handle shortcut selection
+  const handleShortcutSelect = async (shortcut: Shortcut) => {
+    try {
+      const expandedPrompt = await expandShortcut(shortcut.id, {
+        feature: feature.title,
+        project: feature.projectName || undefined,
+        step: stepLabel,
+        description: feature.description || undefined,
+      });
+      
+      setPrompt(expandedPrompt);
+      setIsLaunchModalOpen(true);
+    } catch (err) {
+      console.error('Failed to expand shortcut:', err);
+    }
+  };
 
   const handleLaunch = async () => {
     if (!onLaunch) return;
@@ -104,6 +163,28 @@ export default function WorkflowStepActions({
 
   return (
     <div className="space-y-2">
+      {/* Context-aware shortcuts */}
+      {shortcuts.length > 0 && step.status === 'pending' && canExecute && (
+        <div className="mb-2 pb-2 border-b border-gray-200 dark:border-gray-700">
+          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+            Quick Shortcuts
+          </label>
+          <div className="flex flex-wrap gap-1">
+            {shortcuts.map((shortcut) => (
+              <button
+                key={shortcut.id}
+                type="button"
+                onClick={() => handleShortcutSelect(shortcut)}
+                className="px-2 py-1 text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                title={shortcut.promptTemplate}
+              >
+                {shortcut.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Status-specific actions */}
       {step.status === 'pending' && canExecute && (
         <button

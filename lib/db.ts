@@ -23,8 +23,32 @@ function createPrismaClient(): PrismaClient {
   return new PrismaClient({ adapter });
 }
 
-export const prisma = globalForPrisma.prisma ?? createPrismaClient();
-
-if (process.env.NODE_ENV !== 'production') {
-  globalForPrisma.prisma = prisma;
+// In development, check if the client has all expected models
+// If not, clear the cache and recreate (handles Prisma client regeneration)
+function getPrismaClient(): PrismaClient {
+  const existing = globalForPrisma.prisma;
+  
+  // Check if client exists and has the projectContext model as a proper delegate
+  if (existing && existing.projectContext && typeof existing.projectContext.findUnique === 'function') {
+    return existing;
+  }
+  
+  // If client exists but is missing models, clear cache and recreate
+  if (existing) {
+    console.warn('Prisma client missing models, recreating...');
+    if (existing.$disconnect) {
+      existing.$disconnect().catch(() => {});
+    }
+    globalForPrisma.prisma = undefined;
+  }
+  
+  const client = createPrismaClient();
+  
+  if (process.env.NODE_ENV !== 'production') {
+    globalForPrisma.prisma = client;
+  }
+  
+  return client;
 }
+
+export const prisma = getPrismaClient();

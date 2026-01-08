@@ -10,49 +10,53 @@ datasource db {
 }
 
 model Project {
-  id            String    @id @default(cuid())
+  id            String         @id @default(cuid())
   name          String
-  repositoryUrl String    @unique @map("repository_url")
-  defaultBranch String    @default("main") @map("default_branch")
+  repositoryUrl String         @unique @map("repository_url")
+  defaultBranch String         @default("main") @map("default_branch")
   description   String?
-  lastSyncedAt  DateTime? @map("last_synced_at")
-  lastSyncStatus String?  @map("last_sync_status") // success, error, in_progress
-  lastSyncError String?   @map("last_sync_error")
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
+  lastSyncedAt  DateTime?      @map("last_synced_at")
+  lastSyncStatus String?       @map("last_sync_status") // success, error, in_progress
+  lastSyncError String?        @map("last_sync_error")
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
   features      Feature[]
+  context       ProjectContext?
 
   @@map("projects")
 }
 
 model Feature {
-  id            String         @id @default(cuid())
-  projectId     String         @map("project_id")
-  externalId    String?        @map("external_id") // Feature ID from repository (e.g., "001-basic-agent-messaging")
+  id            String          @id @default(cuid())
+  projectId     String          @map("project_id")
+  externalId    String?         @map("external_id") // Feature ID from repository (e.g., "001-basic-agent-messaging")
   title         String
   description   String
-  priority      String         @default("medium") // high, medium, low
-  status        String         @default("planned") // planned, in_progress, completed, blocked
-  createdAt     DateTime       @default(now()) @map("created_at")
-  updatedAt     DateTime       @updatedAt @map("updated_at")
-  project       Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  priority      String          @default("medium") // high, medium, low
+  status        String          @default("planned") // planned, in_progress, completed, blocked
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+  project       Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
   workflowSteps WorkflowStep[]
+  contexts      FeatureContext[]
+  pullRequests  PullRequest[]
 
   @@unique([projectId, externalId])
   @@map("features")
 }
 
 model WorkflowStep {
-  id          String    @id @default(cuid())
-  featureId   String    @map("feature_id")
-  stepType    String    @map("step_type") // spec, design, implement, review, test, submit
-  stepOrder   Int       @default(0) @map("step_order") // Order of the step in workflow (1-6)
-  status      String    @default("pending") // pending, in_progress, completed, blocked
-  agentId     String?   @map("agent_id") // Cursor agent ID
-  output      String?   // Step output/documentation
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
-  feature     Feature   @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  id          String        @id @default(cuid())
+  featureId   String        @map("feature_id")
+  stepType    String        @map("step_type") // spec, design, implement, review, test, submit
+  stepOrder   Int           @default(0) @map("step_order") // Order of the step in workflow (1-6)
+  status      String        @default("pending") // pending, in_progress, completed, blocked
+  agentId     String?       @map("agent_id") // Cursor agent ID
+  output      String?       // Step output/documentation
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+  feature     Feature       @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  pullRequests PullRequest[]
 
   @@map("workflow_steps")
 }
@@ -104,4 +108,52 @@ model Shortcut {
   @@index([isPredefined])
   @@index([category])
   @@map("shortcuts")
+}
+
+model ProjectContext {
+  id        String   @id @default(cuid())
+  projectId String   @unique @map("project_id")
+  content   String   // Markdown supported
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("project_context")
+}
+
+model FeatureContext {
+  id          String   @id @default(cuid())
+  featureId   String   @map("feature_id")
+  content     String   // Markdown supported
+  contextType String   @map("context_type") // description, spec, design, notes, feedback
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  feature     Feature  @relation(fields: [featureId], references: [id], onDelete: Cascade)
+
+  @@index([featureId])
+  @@index([contextType])
+  @@map("feature_context")
+}
+
+model PullRequest {
+  id            String        @id @default(cuid())
+  featureId     String        @map("feature_id")
+  workflowStepId String?      @map("workflow_step_id")
+  agentId       String?       @map("agent_id") // Cursor agent ID
+  prUrl         String        @map("pr_url")
+  prNumber      Int?          @map("pr_number")
+  prTitle       String        @map("pr_title")
+  branchName    String?       @map("branch_name")
+  status        String        @default("open") // draft, open, merged, closed
+  githubPrId    String?       @map("github_pr_id") // GitHub PR ID if GitHub integration available
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+  feature       Feature       @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  workflowStep  WorkflowStep? @relation(fields: [workflowStepId], references: [id], onDelete: SetNull)
+
+  @@index([featureId])
+  @@index([workflowStepId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("pull_requests")
 }

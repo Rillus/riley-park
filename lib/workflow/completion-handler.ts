@@ -16,6 +16,9 @@ import {
 } from './types';
 import { extractStepOutput } from './output-extraction';
 import { getNextStep, isWorkflowComplete, canManuallyCompleteStep } from './state-management';
+import { populateContextFromStep, storeConversationAsContext } from '@/lib/context/auto-populate';
+import { detectPRsInConversation } from '@/lib/pull-requests/detection';
+import { createPRsFromConversation } from '@/lib/pull-requests/service';
 
 /**
  * Options for handling step completion
@@ -61,6 +64,35 @@ export async function handleStepCompletion(
 
     // Update step status and output in database
     await updateStepStatus(step.id, 'completed', output || undefined);
+
+    // Auto-populate feature context from step output
+    if (output) {
+      await populateContextFromStep(feature.id, step.stepType, output);
+    }
+
+    // Store conversation in feature context as notes
+    if (conversation.length > 0) {
+      await storeConversationAsContext(feature.id, conversation);
+    }
+
+    // Detect and create PR records from conversation
+    // PRs are typically created in implement or submit steps
+    if (step.stepType === 'implement' || step.stepType === 'submit') {
+      try {
+        const detectedPRs = detectPRsInConversation(conversation);
+        if (detectedPRs.length > 0) {
+          await createPRsFromConversation(
+            detectedPRs,
+            feature.id,
+            step.id,
+            step.agentId || null
+          );
+        }
+      } catch (error) {
+        // Log error but don't fail step completion if PR detection fails
+        console.error('Failed to detect/create PRs from conversation:', error);
+      }
+    }
 
     // Get next step
     const nextStep = getNextStep(allSteps, step.stepType);

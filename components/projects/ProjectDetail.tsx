@@ -6,6 +6,8 @@ import { Project } from '@/lib/projects/types';
 import { fetchProject } from '@/lib/projects';
 import { fetchFeatures, FeatureWithWorkflow } from '@/lib/features';
 import { FeatureSyncButton } from '@/components/features';
+import ProjectContextEditor from '@/components/context/ProjectContextEditor';
+import { fetchProjectContext } from '@/lib/context/client';
 
 interface ProjectDetailProps {
   projectId: string;
@@ -35,6 +37,8 @@ export default function ProjectDetail({
   const [features, setFeatures] = useState<FeatureWithWorkflow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showContextEditor, setShowContextEditor] = useState(false);
+  const [hasContext, setHasContext] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
@@ -56,6 +60,19 @@ export default function ProjectDetail({
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Check if project has context
+  useEffect(() => {
+    if (project) {
+      fetchProjectContext(project.id)
+        .then((context) => {
+          setHasContext(!!context);
+        })
+        .catch(() => {
+          setHasContext(false);
+        });
+    }
+  }, [project]);
 
   const handleSyncComplete = useCallback(() => {
     // Reload features after sync
@@ -144,9 +161,37 @@ export default function ProjectDetail({
 
       {/* Project Info Card */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-          Project Information
-        </h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            Project Information
+          </h2>
+          <button
+            onClick={() => setShowContextEditor(!showContextEditor)}
+            className="px-3 py-1.5 text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-md transition-colors"
+          >
+            {showContextEditor ? 'Hide Context' : hasContext ? 'Edit Context' : 'Add Context'}
+          </button>
+        </div>
+
+        {/* Project Context Section */}
+        {showContextEditor && (
+          <div className="mb-6 pb-6 border-b border-gray-200 dark:border-gray-700">
+            <h3 className="text-md font-medium text-gray-900 dark:text-gray-100 mb-3">
+              Project Context
+            </h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+              Project-level context that will be included in agent prompts for this project.
+            </p>
+            <ProjectContextEditor
+              projectId={projectId}
+              onSave={() => {
+                setShowContextEditor(false);
+                setHasContext(true);
+              }}
+              onCancel={() => setShowContextEditor(false)}
+            />
+          </div>
+        )}
         
         <dl className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>

@@ -2,9 +2,11 @@
 
 import { WorkflowStep, WorkflowStepStatus } from '@/lib/features/types';
 import { getWorkflowStepLabel, WorkflowStepType } from '@/lib/agent-launch';
+import { PullRequestWithRelations } from '@/lib/pull-requests/types';
 
 interface WorkflowStepCardProps {
   step: WorkflowStep;
+  pullRequests?: PullRequestWithRelations[];
   onLaunchAgent?: (step: WorkflowStep) => void;
   onViewAgent?: (agentId: string) => void;
   onMarkComplete?: (step: WorkflowStep) => void;
@@ -29,8 +31,28 @@ const statusConfig: Record<WorkflowStepStatus, { label: string; badge: string }>
   },
 };
 
+const prStatusConfig: Record<string, { label: string; badge: string }> = {
+  draft: {
+    label: 'Draft',
+    badge: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
+  },
+  open: {
+    label: 'Open',
+    badge: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+  },
+  merged: {
+    label: 'Merged',
+    badge: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+  },
+  closed: {
+    label: 'Closed',
+    badge: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
+  },
+};
+
 export default function WorkflowStepCard({
   step,
+  pullRequests = [],
   onLaunchAgent,
   onViewAgent,
   onMarkComplete,
@@ -44,6 +66,9 @@ export default function WorkflowStepCard({
   const canRerun = status === 'completed';
   const hasAgent = !!step.agentId;
   const canMarkComplete = status === 'in_progress';
+
+  // Filter PRs for this step
+  const stepPRs = pullRequests.filter((pr) => pr.workflowStepId === step.id);
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
@@ -64,6 +89,43 @@ export default function WorkflowStepCard({
           <code className="bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-xs">
             {step.agentId}
           </code>
+        </div>
+      )}
+
+      {/* PR info */}
+      {stepPRs.length > 0 && (
+        <div className="mb-3 space-y-2">
+          {stepPRs.map((pr) => {
+            const prStatus = prStatusConfig[pr.status] || prStatusConfig.open;
+            return (
+              <div key={pr.id} className="flex items-center gap-2">
+                <a
+                  href={pr.prUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                    />
+                  </svg>
+                  PR #{pr.prNumber || 'N/A'}: {pr.prTitle}
+                </a>
+                <span className={`px-2 py-0.5 rounded text-xs font-medium ${prStatus.badge}`}>
+                  {prStatus.label}
+                </span>
+              </div>
+            );
+          })}
         </div>
       )}
 

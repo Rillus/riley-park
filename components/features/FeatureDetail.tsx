@@ -10,6 +10,9 @@ import {
 } from '@/lib/features/types';
 import { fetchFeature, updateWorkflowStep } from '@/lib/features';
 import WorkflowProgress from './WorkflowProgress';
+import FeatureContextView from '@/components/context/FeatureContextView';
+import { fetchFeaturePullRequests, PullRequestListResponse } from '@/lib/pull-requests/client';
+import { PullRequestWithRelations } from '@/lib/pull-requests/types';
 
 interface FeatureWithProject extends FeatureWithWorkflow {
   project: { id: string; name: string; repositoryUrl: string; defaultBranch: string };
@@ -88,6 +91,9 @@ export default function FeatureDetail({
   const [error, setError] = useState<string | null>(null);
   const [selectedStep, setSelectedStep] = useState<WorkflowStep | null>(null);
   const [updatingStep, setUpdatingStep] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'workflow' | 'context' | 'prs'>('workflow');
+  const [pullRequests, setPullRequests] = useState<PullRequestWithRelations[]>([]);
+  const [prsLoading, setPrsLoading] = useState(false);
 
   const loadFeature = useCallback(async () => {
     setLoading(true);
@@ -109,6 +115,23 @@ export default function FeatureDetail({
   useEffect(() => {
     loadFeature();
   }, [loadFeature]);
+
+  // Load PRs when feature is loaded
+  useEffect(() => {
+    if (feature) {
+      setPrsLoading(true);
+      fetchFeaturePullRequests(feature.id)
+        .then((data: PullRequestListResponse) => {
+          setPullRequests(data.pullRequests);
+        })
+        .catch((err) => {
+          console.error('Failed to load pull requests:', err);
+        })
+        .finally(() => {
+          setPrsLoading(false);
+        });
+    }
+  }, [feature]);
 
   const handleStepClick = (step: WorkflowStep) => {
     setSelectedStep(step);
@@ -252,16 +275,61 @@ export default function FeatureDetail({
         </div>
       </div>
 
-      {/* Workflow Progress */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6">
-        <WorkflowProgress
-          steps={feature.workflowSteps}
-          onStepClick={handleStepClick}
-        />
-      </div>
+      {/* Tabs */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+        <div className="border-b border-gray-200 dark:border-gray-700">
+          <nav className="flex -mb-px">
+            <button
+              onClick={() => setActiveTab('workflow')}
+              className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === 'workflow'
+                  ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
+              }`}
+            >
+              Workflow
+            </button>
+            <button
+              onClick={() => setActiveTab('context')}
+              className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === 'context'
+                  ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
+              }`}
+            >
+              Context
+            </button>
+            <button
+              onClick={() => setActiveTab('prs')}
+              className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === 'prs'
+                  ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
+              }`}
+            >
+              Pull Requests
+              {pullRequests.length > 0 && (
+                <span className="ml-2 px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full">
+                  {pullRequests.length}
+                </span>
+              )}
+            </button>
+          </nav>
+        </div>
 
-      {/* Workflow Steps Details */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6">
+        <div className="p-6">
+          {activeTab === 'workflow' && (
+            <>
+              {/* Workflow Progress */}
+              <div className="mb-6">
+                <WorkflowProgress
+                  steps={feature.workflowSteps}
+                  onStepClick={handleStepClick}
+                />
+              </div>
+
+              {/* Workflow Steps Details */}
+              <div>
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
           Workflow Steps
         </h2>
@@ -327,6 +395,93 @@ export default function FeatureDetail({
               </p>
             </div>
           ))}
+        </div>
+              </div>
+            </>
+          )}
+
+          {activeTab === 'context' && (
+            <FeatureContextView featureId={feature.id} />
+          )}
+
+          {activeTab === 'prs' && (
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                Pull Requests
+              </h2>
+              {prsLoading ? (
+                <p className="text-gray-500 dark:text-gray-400">Loading pull requests...</p>
+              ) : pullRequests.length === 0 ? (
+                <p className="text-gray-500 dark:text-gray-400">No pull requests for this feature yet.</p>
+              ) : (
+                <div className="space-y-4">
+                  {pullRequests.map((pr) => (
+                    <div
+                      key={pr.id}
+                      className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <a
+                            href={pr.prUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-lg font-medium text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-2"
+                          >
+                            <svg
+                              className="w-5 h-5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                              />
+                            </svg>
+                            {pr.prTitle}
+                          </a>
+                          {pr.prNumber && (
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                              PR #{pr.prNumber}
+                            </p>
+                          )}
+                          {pr.branchName && (
+                            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                              Branch: {pr.branchName}
+                            </p>
+                          )}
+                        </div>
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-medium ${
+                            pr.status === 'open'
+                              ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                              : pr.status === 'merged'
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                              : pr.status === 'closed'
+                              ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                              : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+                          }`}
+                        >
+                          {pr.status}
+                        </span>
+                      </div>
+                      {pr.workflowStep && (
+                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
+                          Step: {pr.workflowStep.stepType}
+                        </p>
+                      )}
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
+                        Created: {formatDate(pr.createdAt)}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

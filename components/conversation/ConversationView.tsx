@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { CursorAPIClient, ConversationResponse, AgentStatus } from '@/lib/cursor-api';
 import { getApiKey } from '@/lib/cursor-api/storage';
 import ConversationMessage from './ConversationMessage';
+import { fetchShortcuts, expandShortcut, Shortcut } from '@/lib/shortcuts/client';
 
 interface ConversationViewProps {
   agentId: string;
@@ -31,6 +32,8 @@ export default function ConversationView({
   const [followupError, setFollowupError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const previousMessageCount = useRef<number>(0);
+  const [shortcuts, setShortcuts] = useState<Shortcut[]>([]);
+  const [shortcutsLoading, setShortcutsLoading] = useState(false);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -102,6 +105,41 @@ export default function ConversationView({
       );
     } finally {
       setSendingFollowup(false);
+    }
+  };
+
+  // Load shortcuts on mount
+  useEffect(() => {
+    setShortcutsLoading(true);
+    fetchShortcuts()
+      .then((data) => {
+        // Show first 5 shortcuts as quick actions
+        setShortcuts(data.shortcuts.slice(0, 5));
+      })
+      .catch((err) => {
+        console.error('Failed to load shortcuts:', err);
+      })
+      .finally(() => {
+        setShortcutsLoading(false);
+      });
+  }, []);
+
+  // Handle shortcut selection
+  const handleShortcutSelect = async (shortcut: Shortcut) => {
+    try {
+      // Extract context from conversation if available
+      const expandedPrompt = await expandShortcut(shortcut.id, {
+        feature: undefined,
+        project: undefined,
+        step: undefined,
+        description: conversation?.messages[0]?.content || undefined,
+      });
+      
+      // Insert expanded prompt into follow-up input
+      setFollowupMessage(expandedPrompt);
+    } catch (err) {
+      console.error('Failed to expand shortcut:', err);
+      setFollowupError('Failed to expand shortcut');
     }
   };
 
@@ -219,6 +257,29 @@ export default function ConversationView({
 
       {/* Follow-up input */}
       <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+        {/* Quick Shortcuts */}
+        {shortcuts.length > 0 && (
+          <div className="mb-3 pb-3 border-b border-gray-200 dark:border-gray-700">
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+              Quick Shortcuts
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {shortcuts.map((shortcut) => (
+                <button
+                  key={shortcut.id}
+                  type="button"
+                  onClick={() => handleShortcutSelect(shortcut)}
+                  disabled={sendingFollowup || shortcutsLoading}
+                  className="px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={shortcut.promptTemplate}
+                >
+                  {shortcut.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <form onSubmit={handleSendFollowup} className="space-y-3">
           {followupError && (
             <div className="p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-red-700 dark:text-red-400 text-sm">
